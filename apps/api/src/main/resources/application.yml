@@ -37,9 +37,10 @@ docgen:
   max-project-size: 1000000000
   llm:
     enabled: false
-    provider: mock  # mock, openai, anthropic
+    provider: mock  # mock, openai, anthropic, gemini, bedrock
     api-key: ${LLM_API_KEY:}
     model: ${LLM_MODEL:}
+    aws-region: ${AWS_REGION:us-east-1}
 
 logging:
   level:
