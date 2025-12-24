@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Doc Generator</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Universal Documentation Generator</h1>
+            <p class="subtitle">Automatic technical & functional documentation for any codebase</p>
+        </header>
+
+        <section class="import-section">
+            <h2>Import New Project</h2>
+            <form id="import-form">
+                <div class="form-group">
+                    <label for="project-name">Project Name</label>
+                    <input type="text" id="project-name" placeholder="my-awesome-project" required>
+                </div>
+                <div class="form-group">
+                    <label for="git-url">Git URL</label>
+                    <input type="url" id="git-url" placeholder="https://github.com/user/repo">
+                </div>
+                <button type="submit" class="btn-primary">Import Project</button>
+            </form>
+        </section>
+
+        <section class="projects-section">
+            <h2>Projects</h2>
+            <div id="projects-list" class="projects-grid">
+                <p class="loading">Loading projects...</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

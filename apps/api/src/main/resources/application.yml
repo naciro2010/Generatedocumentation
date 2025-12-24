@@ -35,7 +35,11 @@ management:
 docgen:
   storage-path: ./storage
   max-project-size: 1000000000
-  llm-enabled: false
+  llm:
+    enabled: false
+    provider: mock  # mock, openai, anthropic
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:}
 
 logging:
   level:

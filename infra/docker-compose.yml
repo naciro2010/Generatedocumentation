@@ -18,6 +18,23 @@ services:
       timeout: 5s
       retries: 5
 
+  neo4j:
+    image: neo4j:5.15
+    container_name: docgen-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/docgenneo4j
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: ..
@@ -31,8 +48,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/docgen
       SPRING_DATASOURCE_USERNAME: docgen
       SPRING_DATASOURCE_PASSWORD: docgen
+      SPRING_NEO4J_URI: bolt://neo4j:7687
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: docgenneo4j
     depends_on:
       postgres:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
     volumes:
       - ./storage:/app/storage
@@ -56,3 +78,4 @@ services:
 
 volumes:
   postgres_data:
+  neo4j_data:

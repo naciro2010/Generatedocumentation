@@ -140,11 +140,14 @@ docs/
 
 ## 🔌 Plugins
 
-L'application inclut 3 plugins de base:
+L'application inclut **6 plugins** prêts à l'emploi:
 
 1. **Node.js/Express** - Détecte routes, middleware, endpoints
 2. **Python/FastAPI** - Détecte routes FastAPI, modèles Pydantic
 3. **Java/Spring Boot** - Détecte controllers, entities, services
+4. **Ruby/Rails** - Détecte actions, routes RESTful, models ActiveRecord
+5. **Go** - Détecte HTTP handlers, Gin routes, structs
+6. **Rust** - Détecte Actix-web/Rocket routes, structs
 
 ### Créer un plugin personnalisé
 
@@ -217,6 +220,10 @@ spring:
 | GET | `/v1/projects/{id}/status` | Statut du projet |
 | POST | `/v1/projects/{id}/generate-docs` | Générer la documentation |
 | GET | `/v1/projects` | Lister tous les projets |
+| GET | `/v1/search/{projectId}?query=...` | **NEW** Recherche sémantique |
+| GET | `/v1/export/{projectId}/pdf` | **NEW** Export PDF |
+
+**UI Web**: Accédez à `http://localhost:8080` pour une interface graphique!
 
 Documentation OpenAPI/Swagger disponible sur: `http://localhost:8080/swagger-ui.html`
 
@@ -260,18 +267,35 @@ val feature = Assertion.uncertain(
 
 ## 🔮 LLM Integration (Optional)
 
-L'application peut fonctionner **sans LLM** (mode fallback).
+L'application peut fonctionner **sans LLM** (mode fallback avec mock).
 
-Pour activer un LLM:
+### Providers supportés:
+- **OpenAI** (GPT-4 Turbo)
+- **Anthropic** (Claude 3.5 Sonnet)
+- **Mock** (par défaut, sans API key)
 
-1. Implémenter `LLMClient` interface
-2. Configurer dans `AppConfig`
-3. Activer: `docgen.llm-enabled=true`
+### Configuration:
+
+```yaml
+docgen:
+  llm:
+    enabled: true
+    provider: openai  # ou anthropic, mock
+    api-key: ${LLM_API_KEY}
+    model: gpt-4-turbo-preview  # optionnel
+```
+
+Ou via variables d'environnement:
+```bash
+export LLM_API_KEY="sk-..."
+export LLM_MODEL="gpt-4-turbo-preview"
+```
 
 Le LLM est utilisé pour:
 - Déduction de fonctionnalités métier
 - Identification de règles de gestion
 - Génération de descriptions user-facing
+- Analyse sémantique avancée
 
 ## 🛠️ Développement
 

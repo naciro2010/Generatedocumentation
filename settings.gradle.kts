@@ -7,5 +7,6 @@ include(
     "libs:parsing",
     "libs:plugins",
     "libs:llm",
-    "libs:docs"
+    "libs:docs",
+    "libs:graph-neo4j"
 )

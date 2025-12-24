@@ -14,6 +14,11 @@ dependencies {
     // Markdown processing
     implementation("org.commonmark:commonmark:0.22.0")
 
+    // PDF generation
+    implementation("com.openhtmltopdf:openhtmltopdf-core:1.0.10")
+    implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+    implementation("com.openhtmltopdf:openhtmltopdf-svg-support:1.0.10")
+
     // YAML for MkDocs config
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

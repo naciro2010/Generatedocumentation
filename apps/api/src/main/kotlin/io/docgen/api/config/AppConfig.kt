@@ -43,7 +43,10 @@ class AppConfig {
         return listOf(
             NodeExpressPlugin(),
             PythonFastAPIPlugin(),
-            JavaSpringPlugin()
+            JavaSpringPlugin(),
+            io.docgen.plugins.impl.RubyRailsPlugin(),
+            io.docgen.plugins.impl.GoPlugin(),
+            io.docgen.plugins.impl.RustPlugin()
         )
     }
 
