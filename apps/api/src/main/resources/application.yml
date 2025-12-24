@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: universal-doc-generator-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/docgen
+    username: docgen
+    password: docgen
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+docgen:
+  storage-path: ./storage
+  max-project-size: 1000000000
+  llm-enabled: false
+
+logging:
+  level:
+    root: INFO
+    io.docgen: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

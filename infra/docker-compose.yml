@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: docgen-postgres
+    environment:
+      POSTGRES_DB: docgen
+      POSTGRES_USER: docgen
+      POSTGRES_PASSWORD: docgen
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docgen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      args:
+        MODULE: api
+    container_name: docgen-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/docgen
+      SPRING_DATASOURCE_USERNAME: docgen
+      SPRING_DATASOURCE_PASSWORD: docgen
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      args:
+        MODULE: worker
+    container_name: docgen-worker
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/docgen
+      SPRING_DATASOURCE_USERNAME: docgen
+      SPRING_DATASOURCE_PASSWORD: docgen
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+
+volumes:
+  postgres_data:
