@@ -17,6 +17,8 @@ import io.docgen.plugins.api.PluginRegistry
 import io.docgen.plugins.impl.JavaSpringPlugin
 import io.docgen.plugins.impl.NodeExpressPlugin
 import io.docgen.plugins.impl.PythonFastAPIPlugin
+import io.docgen.plugins.impl.legacy.JavaLegacyPlugin
+import io.docgen.plugins.impl.legacy.PHPLegacyPlugin
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -41,12 +43,16 @@ class AppConfig {
     @Bean
     fun analysisPlugins(): List<AnalysisPlugin> {
         return listOf(
+            // Modern frameworks
             NodeExpressPlugin(),
             PythonFastAPIPlugin(),
             JavaSpringPlugin(),
             io.docgen.plugins.impl.RubyRailsPlugin(),
             io.docgen.plugins.impl.GoPlugin(),
-            io.docgen.plugins.impl.RustPlugin()
+            io.docgen.plugins.impl.RustPlugin(),
+            // Legacy frameworks (critical for old codebases)
+            JavaLegacyPlugin(),
+            PHPLegacyPlugin()
         )
     }
 

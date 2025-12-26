@@ -138,43 +138,335 @@ docs/
     └── evidence-index.md  # Mapping assertions → preuves
 ```
 
-## 🔌 Plugins
+## 🧠 Comment Ça Marche Réellement
 
-L'application inclut **6 plugins** prêts à l'emploi:
+### Le Concept de Plugin
 
-1. **Node.js/Express** - Détecte routes, middleware, endpoints
-2. **Python/FastAPI** - Détecte routes FastAPI, modèles Pydantic
-3. **Java/Spring Boot** - Détecte controllers, entities, services
-4. **Ruby/Rails** - Détecte actions, routes RESTful, models ActiveRecord
-5. **Go** - Détecte HTTP handlers, Gin routes, structs
-6. **Rust** - Détecte Actix-web/Rocket routes, structs
+**Un plugin = un traducteur de code vers documentation**
 
-### Créer un plugin personnalisé
+Chaque plugin sait analyser un type de projet (Struts, EJB, PHP legacy, Express.js, etc.) et **extraire** les informations importantes:
+- 📍 Endpoints (URLs accessibles)
+- 💾 Entités (tables, modèles de données)
+- ⚙️ Services (logique métier)
+- 🔗 Relations entre composants
+
+Le plugin produit un **IR (Intermediate Representation)** - un format normalisé que tous les plugins utilisent.
+
+### Workflow Complet: Du Code à la Documentation
+
+```
+┌─────────────┐
+│  Code       │  Votre dépôt Git (Struts, PHP, Spring, etc.)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────┐
+│  PHASE 1: DÉTECTION                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
+│  │ Plugin 1 │  │ Plugin 2 │  │ Plugin 3 │  ...         │
+│  │ Struts   │  │ PHP      │  │ Spring   │              │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘              │
+│       │             │             │                     │
+│       ▼             ▼             ▼                     │
+│    Score: 0.9    Score: 0.2    Score: 0.1              │
+│    ✅ Struts!    ❌ Pas PHP    ❌ Pas Spring            │
+└─────────────────────────────────────────────────────────┘
+       │
+       ▼ Plugin avec le meilleur score gagne
+┌─────────────────────────────────────────────────────────┐
+│  PHASE 2: EXTRACTION STRUCTURELLE (Plugin Struts)      │
+│                                                         │
+│  Input:                                                 │
+│  ┌─────────────────────────────────────┐               │
+│  │ class LoginAction extends Action {  │               │
+│  │   public ActionForward execute(...) │               │
+│  │     String user = req.getParam(...) │               │
+│  │     ResultSet rs = conn.query(...)  │               │
+│  │     ...                             │               │
+│  │ }                                   │               │
+│  └─────────────────────────────────────┘               │
+│                                                         │
+│  Output (IR):                                          │
+│  ✅ Endpoint: POST /login.do                           │
+│     Evidence: LoginAction.java:12                      │
+│                                                         │
+│  ✅ Service: LoginAction.execute()                     │
+│     Evidence: LoginAction.java:12-45                   │
+│                                                         │
+│  ⚠️  Direct SQL Query detected                         │
+│     Evidence: LoginAction.java:23                      │
+│     ❗ Uncertainty: "Business logic unclear"           │
+│     ❗ Uncertainty: "Need LLM to understand intent"    │
+└─────────────────────────────────────────────────────────┘
+       │
+       ▼ Le plugin a trouvé des "uncertainties"
+┌─────────────────────────────────────────────────────────┐
+│  PHASE 3: ENRICHISSEMENT LLM (Critical!)               │
+│                                                         │
+│  Plugin → "J'ai trouvé un LoginAction mais je ne sais  │
+│           pas ce qu'il fait vraiment au niveau métier"  │
+│                                                         │
+│  LLM reçoit:                                           │
+│  - Le code source (LoginAction.java)                   │
+│  - Le contexte (Struts 1.x, SQL direct)               │
+│  - Question: "Quelle est la règle métier?"            │
+│                                                         │
+│  LLM répond:                                           │
+│  📋 "Fonctionnalité: Authentification utilisateur"     │
+│  📋 "Règles de gestion:"                               │
+│     - Vérifie username/password contre base MySQL      │
+│     - Crée une session si succès                       │
+│     - Redirige vers /home.do si OK, /error.do si KO    │
+│  📋 "Risques:"                                         │
+│     - ⚠️ Potential SQL injection (pas de prepared stmt)│
+│     - ⚠️ Password pas hashé (stocké en clair)          │
+│  📋 "Schéma DB inféré:"                                │
+│     - Table: users (id, username, password)            │
+└─────────────────────────────────────────────────────────┘
+       │
+       ▼ IR + Enrichissement LLM combinés
+┌─────────────────────────────────────────────────────────┐
+│  PHASE 4: GÉNÉRATION DOCUMENTATION                      │
+│                                                         │
+│  Génère:                                               │
+│  - architecture.md (diagrammes C4)                     │
+│  - api.md (POST /login.do → LoginAction)               │
+│  - features.md (🔐 Authentication avec règles métier)  │
+│  - data-model.md (Table users avec schéma inféré)     │
+│  - security.md (⚠️ SQL injection, passwords en clair)  │
+│                                                         │
+│  Tout avec des liens Evidence → Code source!           │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Pourquoi le LLM est Critique pour le Code Legacy
+
+**Le problème du code ancien:**
+
+| Avec un plugin seul | Avec Plugin + LLM |
+|---------------------|-------------------|
+| ✅ "Il y a une classe LoginAction" | ✅ "Il y a une classe LoginAction" |
+| ✅ "Elle hérite de Action" | ✅ "C'est un Struts 1.x Action" |
+| ✅ "Elle fait une requête SQL" | ✅ "Elle authentifie les utilisateurs contre MySQL" |
+| ❌ On ne sait pas POURQUOI | ✅ "Règle: username + password vérifiés, session créée si OK" |
+| ❌ On ne sait pas le schéma DB | ✅ "Table users(id, username, password)" |
+| ❌ Pas de doc fonctionnelle | ✅ "Feature: User Authentication with sessions" |
+
+**Le code legacy (Struts, EJB 2.x, PHP procédural) n'a pas:**
+- ❌ Pas de commentaires
+- ❌ Pas de doc Swagger/OpenAPI
+- ❌ Logique métier mélangée avec SQL/HTML
+- ❌ Noms de variables cryptiques (`$usr`, `rs`, `bean`)
+
+**Le LLM comprend le POURQUOI en lisant le code:**
+- ✅ Infère les règles métier à partir du code
+- ✅ Devine le schéma DB à partir des requêtes SQL
+- ✅ Comprend les workflows (login → session → redirect)
+- ✅ Détecte les risques de sécurité
+
+### Exemple Réel: Plugin PHP Legacy
+
+**Code PHP procédural:**
+
+```php
+<?php
+// login.php
+session_start();
+$user = $_POST['username'];
+$pass = $_POST['password'];
+
+$result = mysql_query("SELECT * FROM users WHERE username='$user' AND password='$pass'");
+if(mysql_num_rows($result) > 0) {
+    $_SESSION['logged_in'] = true;
+    header("Location: dashboard.php");
+} else {
+    header("Location: error.php");
+}
+?>
+```
+
+**Ce que le PHPLegacyPlugin détecte:**
 
 ```kotlin
-class MyCustomPlugin : AnalysisPlugin {
-    override val name = "my-plugin"
-    override val description = "Description"
+✅ Endpoint: /login.php (page PHP)
+✅ Direct SQL query: SELECT * FROM users WHERE...
+   Evidence: login.php:6
+⚠️  SQL Injection risk (uses $_POST directly)
+⚠️  Session management detected
 
+❗ Uncertainties:
+   - "Business rule behind this query unclear"
+   - "Need LLM to extract database schema"
+   - "Authentication flow requires LLM analysis"
+```
+
+**Ce que le LLM ajoute:**
+
+```yaml
+Functional Insight:
+  Title: "User Authentication Feature"
+  Description: |
+    Authenticates users by checking credentials against MySQL database.
+    Creates PHP session on success and redirects to dashboard.
+
+  Business Rules:
+    - User must provide username and password
+    - Credentials verified against 'users' table
+    - Session created if credentials match
+    - Redirect to dashboard on success, error page on failure
+
+  Security Risks:
+    - 🔴 Critical: SQL Injection (direct POST to query)
+    - 🔴 Critical: Passwords stored in plain text
+    - 🟡 Medium: No CSRF protection
+
+  Database Schema (inferred):
+    Table: users
+      - username: VARCHAR
+      - password: VARCHAR (plain text!)
+
+  User-Facing Feature:
+    "Allows users to log into the system using username and password"
+```
+
+**Documentation générée:**
+
+```markdown
+# Feature: User Authentication
+
+**Status:** ⚠️ Security Issues Detected
+
+## Description
+Allows users to log into the system using username and password.
+
+## Implementation
+- **File:** `login.php:1-12`
+- **Type:** Procedural PHP
+- **Database:** Direct MySQL queries
+
+## Business Rules
+1. User provides username + password via POST
+2. System checks credentials against `users` table
+3. If valid: create session, redirect to dashboard
+4. If invalid: redirect to error page
+
+## Security Analysis
+🔴 **CRITICAL ISSUES FOUND:**
+- SQL Injection vulnerability ([login.php:6](login.php#L6))
+- Plain text password storage
+- No CSRF protection
+
+## Recommendations
+- [ ] Use prepared statements (PDO)
+- [ ] Hash passwords (bcrypt/Argon2)
+- [ ] Add CSRF tokens
+- [ ] Migrate to modern framework
+```
+
+### Les 8 Plugins Disponibles
+
+| Plugin | Technologie | Cas d'Usage |
+|--------|-------------|-------------|
+| **JavaLegacyPlugin** | JBoss, Struts 1.x/2.x, EJB 2.x/3.x | Applications J2EE anciennes (2000-2010) |
+| **PHPLegacyPlugin** | PHP procédural, ancien OOP | Sites PHP sans framework (~ 2005) |
+| **JavaSpringPlugin** | Spring Boot, Spring MVC | Applications Java modernes |
+| **NodeExpressPlugin** | Express.js, Node.js | API REST Node |
+| **PythonFastAPIPlugin** | FastAPI, Pydantic | API Python modernes |
+| **RubyRailsPlugin** | Ruby on Rails | Applications Rails |
+| **GoPlugin** | Gin, net/http | Microservices Go |
+| **RustPlugin** | Actix-web, Rocket | Services Rust |
+
+**Focus sur le Legacy:**
+- ✅ **JavaLegacyPlugin**: Analyse XML descriptors (struts-config.xml, ejb-jar.xml), détecte EJB 2.x avec Home/Remote interfaces
+- ✅ **PHPLegacyPlugin**: Détecte SQL injection, sessions, formulaires HTML/PHP mélangés
+
+### Créer Votre Propre Plugin
+
+```kotlin
+package io.docgen.plugins.impl
+
+class MyFrameworkPlugin : AnalysisPlugin {
+    override val name = "my-framework"
+
+    // 1. Détection: retourne un score de confiance 0.0-1.0
     override fun detect(fingerprint: ProjectFingerprint, projectPath: Path): Double {
-        // Return confidence 0.0-1.0
+        var score = 0.0
+
+        // Check for framework-specific files
+        if (Files.exists(projectPath.resolve("my-config.xml"))) {
+            score += 0.5
+        }
+
+        // Check for typical code patterns
+        val hasFrameworkCode = Files.walk(projectPath)
+            .filter { it.extension == "java" }
+            .anyMatch { it.readText().contains("import com.myframework") }
+
+        if (hasFrameworkCode) score += 0.5
+
+        return score.coerceAtMost(1.0)
     }
 
+    // 2. Analyse: extrait l'IR + signale les incertitudes pour le LLM
     override fun analyze(projectPath: Path): PluginAnalysisResult {
-        // Extract IR from project
+        val endpoints = mutableListOf<EndpointIR>()
+        val insights = mutableListOf<FunctionalInsight>()
+
+        // Parcourir les fichiers
+        Files.walk(projectPath).forEach { file ->
+            val content = file.readText()
+
+            // Détecter les patterns spécifiques
+            val pattern = Regex("""@Route\("([^"]+)"\)""")
+            pattern.findAll(content).forEach { match ->
+                val path = match.groupValues[1]
+
+                // Créer l'endpoint avec Evidence
+                endpoints.add(EndpointIR(
+                    id = path,
+                    method = HttpMethod.GET,
+                    path = path,
+                    handler = file.name,
+                    evidences = listOf(Evidence(
+                        filePath = file.toString(),
+                        startLine = lineNumber,
+                        endLine = lineNumber,
+                        symbol = "route-definition"
+                    ))
+                ))
+
+                // Signaler au LLM: "Je ne comprends pas la logique métier"
+                insights.add(FunctionalInsight(
+                    category = "endpoint",
+                    title = "Route: $path",
+                    description = "HTTP endpoint detected",
+                    confidence = "CERTAIN",
+                    evidenceRefs = listOf("$file:$lineNumber"),
+                    uncertainties = listOf(
+                        "Business purpose requires LLM analysis",
+                        "Request/response schema unknown"
+                    )
+                ))
+            }
+        }
+
+        return PluginAnalysisResult(
+            projectIR = ProjectIR(...),
+            functionalInsights = insights
+        )
     }
 }
 ```
 
-Enregistrer dans `AppConfig`:
+**Enregistrer le plugin:**
+
 ```kotlin
+// apps/api/src/main/kotlin/io/docgen/api/config/AppConfig.kt
 @Bean
 fun analysisPlugins(): List<AnalysisPlugin> {
     return listOf(
-        NodeExpressPlugin(),
-        PythonFastAPIPlugin(),
-        JavaSpringPlugin(),
-        MyCustomPlugin()  // Ajouter ici
+        // ... plugins existants
+        MyFrameworkPlugin()  // ← Ajouter ici
     )
 }
 ```
