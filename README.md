@@ -1,10 +1,30 @@
 # Universal Documentation Generator
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-blue.svg)](https://kotlinlang.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.1-green.svg)](https://spring.io/projects/spring-boot)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.20-blue.svg)](https://kotlinlang.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Universal Documentation Generator** est une application Kotlin/Spring Boot qui génère automatiquement la documentation technique et fonctionnelle d'un dépôt de code, quelle que soit sa technologie.
+**Universal Documentation Generator** est un outil Kotlin qui génère automatiquement la documentation technique et fonctionnelle d'un dépôt de code legacy, avec enrichissement LLM.
+
+## 📚 Navigation Rapide
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Démarrage rapide avec exemples de code ⚡
+- **[BUILD.md](BUILD.md)** - Instructions de build détaillées 🔨
+- **[docs/AI_SETUP.md](docs/AI_SETUP.md)** - Configuration des providers LLM (OpenAI, Gemini, etc.) 🤖
+- **[README_EN.md](README_EN.md)** - English documentation 🇬🇧
+
+## 🎯 Focus: Code Legacy
+
+**Spécialisé pour analyser du code ancien:**
+- ✅ **Java Legacy**: JBoss, Struts 1.x/2.x, EJB 2.x/3.x
+- ✅ **PHP Legacy**: Code procédural, SQL direct, vieux OOP
+- ✅ **Spring, Express, FastAPI, Rails, Go, Rust** (aussi supportés)
+
+**Pourquoi un LLM est essentiel:**
+Le code legacy n'a souvent ni commentaires ni documentation. Le LLM comprend le **POURQUOI** en lisant le code:
+- Règles métier cachées dans le code
+- Schémas DB inférés des requêtes SQL
+- Workflows complexes (login → session → redirect)
+- Risques de sécurité (SQL injection, XSS)
 
 ## 🎯 Objectifs
 

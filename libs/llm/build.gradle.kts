@@ -5,28 +5,24 @@ plugins {
 dependencies {
     api(project(":libs:core"))
 
-    // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.9.0")
+    // Kotlin coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
-    // HTTP client
-    implementation("org.springframework:spring-web")
-    implementation("org.springframework:spring-webflux")
-    implementation("io.projectreactor.netty:reactor-netty")
+    // HTTP client (simple OkHttp instead of Spring WebFlux)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // JSON
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.3")
 
     // OpenAI SDK (community)
-    implementation("com.aallam.openai:openai-client:3.8.2")
+    implementation("com.aallam.openai:openai-client:3.6.2")
 
-    // AWS SDK for Bedrock
-    implementation(platform("software.amazon.awssdk:bom:2.25.11"))
+    // AWS SDK for Bedrock (optional - can be removed if needed)
+    implementation(platform("software.amazon.awssdk:bom:2.21.0"))
     implementation("software.amazon.awssdk:bedrock-runtime")
-    implementation("software.amazon.awssdk:auth")
 
     // Testing
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
-    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+    testImplementation("io.mockk:mockk:1.13.8")
 }

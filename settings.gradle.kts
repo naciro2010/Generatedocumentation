@@ -1,8 +1,16 @@
 rootProject.name = "universal-doc-generator"
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 include(
-    "apps:api",
-    "apps:worker",
+    // Temporarily exclude apps - they need Spring Boot
+    // "apps:api",
+    // "apps:worker",
     "libs:core",
     "libs:parsing",
     "libs:plugins",
