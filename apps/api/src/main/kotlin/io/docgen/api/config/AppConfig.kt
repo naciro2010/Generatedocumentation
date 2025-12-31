@@ -1,104 +1,59 @@
 package io.docgen.api.config
 
-import io.docgen.docs.generator.DocumentationGenerator
-import io.docgen.docs.generator.MarkdownRenderer
-import io.docgen.docs.generator.MermaidGenerator
-import io.docgen.docs.generator.StandardDocumentationGenerator
-import io.docgen.docs.mermaid.MermaidGeneratorImpl
-import io.docgen.llm.api.LLMClient
-import io.docgen.llm.mock.MockLLMClient
-import io.docgen.parsing.detector.CompositeTechDetector
-import io.docgen.parsing.detector.FileBasedDetector
-import io.docgen.parsing.detector.TechDetector
-import io.docgen.parsing.extractor.CodeExtractor
-import io.docgen.parsing.extractor.RegexCodeExtractor
+import io.docgen.core.storage.LocalFileStore
+import io.docgen.core.storage.ProjectStore
+import io.docgen.llm.validator.ExtractionValidator
 import io.docgen.plugins.api.AnalysisPlugin
-import io.docgen.plugins.api.PluginRegistry
 import io.docgen.plugins.impl.JavaSpringPlugin
+import io.docgen.plugins.impl.JavaLegacyPlugin
+import io.docgen.plugins.impl.PHPLegacyPlugin
 import io.docgen.plugins.impl.NodeExpressPlugin
 import io.docgen.plugins.impl.PythonFastAPIPlugin
-import io.docgen.plugins.impl.legacy.JavaLegacyPlugin
-import io.docgen.plugins.impl.legacy.PHPLegacyPlugin
-import org.springframework.boot.context.properties.ConfigurationProperties
+import io.docgen.plugins.orchestrator.MultiFrameworkOrchestrator
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.nio.file.Paths
 
+/**
+ * Simplified configuration without Spring Data JPA, PostgreSQL, Flyway
+ * Everything is file-based JSON storage
+ */
 @Configuration
-class AppConfig {
+class SimpleAppConfig {
 
     @Bean
-    fun techDetector(): TechDetector {
-        return CompositeTechDetector(
-            detectors = listOf(
-                FileBasedDetector()
-            )
-        )
-    }
-
-    @Bean
-    fun codeExtractor(): CodeExtractor {
-        return RegexCodeExtractor()
+    fun projectStore(
+        @Value("\${docgen.storage-path:./storage}") storagePath: String
+    ): ProjectStore {
+        return LocalFileStore(Paths.get(storagePath))
     }
 
     @Bean
     fun analysisPlugins(): List<AnalysisPlugin> {
         return listOf(
-            // Modern frameworks
-            NodeExpressPlugin(),
-            PythonFastAPIPlugin(),
             JavaSpringPlugin(),
-            io.docgen.plugins.impl.RubyRailsPlugin(),
-            io.docgen.plugins.impl.GoPlugin(),
-            io.docgen.plugins.impl.RustPlugin(),
-            // Legacy frameworks (critical for old codebases)
             JavaLegacyPlugin(),
-            PHPLegacyPlugin()
+            PHPLegacyPlugin(),
+            NodeExpressPlugin(),
+            PythonFastAPIPlugin()
+            // Add more plugins as needed
         )
     }
 
     @Bean
-    fun pluginRegistry(plugins: List<AnalysisPlugin>): PluginRegistry {
-        return PluginRegistry(plugins)
+    fun multiFrameworkOrchestrator(plugins: List<AnalysisPlugin>): MultiFrameworkOrchestrator {
+        return MultiFrameworkOrchestrator(plugins)
     }
 
     @Bean
-    fun llmClient(): LLMClient {
-        // TODO: Allow configuration of real LLM client
-        return MockLLMClient()
-    }
-
-    @Bean
-    fun mermaidGenerator(): MermaidGenerator {
-        return MermaidGeneratorImpl()
-    }
-
-    @Bean
-    fun markdownRenderer(): MarkdownRenderer {
-        return SimpleMarkdownRenderer()
-    }
-
-    @Bean
-    fun documentationGenerator(
-        markdownRenderer: MarkdownRenderer,
-        mermaidGenerator: MermaidGenerator
-    ): DocumentationGenerator {
-        return StandardDocumentationGenerator(markdownRenderer, mermaidGenerator)
+    fun extractionValidator(): ExtractionValidator {
+        // Note: LLMClient would need to be injected here in real implementation
+        return ExtractionValidator(object : io.docgen.llm.client.LLMClient {
+            override fun analyzeCode(prompt: String): String {
+                // Mock implementation - replace with real LLM client
+                return """{"confidence": 0.95, "missedEndpoints": []}"""
+            }
+        })
     }
 }
-
-class SimpleMarkdownRenderer : MarkdownRenderer {
-    override fun render(template: String, context: Map<String, Any>): String {
-        var result = template
-        context.forEach { (key, value) ->
-            result = result.replace("\${$key}", value.toString())
-        }
-        return result
-    }
-}
-
-@ConfigurationProperties(prefix = "docgen")
-data class DocGenProperties(
-    var storagePath: String = "./storage",
-    var maxProjectSize: Long = 1_000_000_000, // 1GB
-    var llmEnabled: Boolean = false
-)

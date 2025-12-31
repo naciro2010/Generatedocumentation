@@ -1,17 +1,21 @@
 package io.docgen.api.controller
 
-import io.docgen.api.service.ProjectService
+import io.docgen.api.service.ProjectServiceSimplified
 import io.docgen.core.model.ProjectStatus
+import io.docgen.plugins.orchestrator.MultiFrameworkOrchestrator
+import io.docgen.core.parsing.ProjectFingerprinter
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
+import java.nio.file.Paths
 
 @RestController
 @RequestMapping("/v1/projects")
-class ProjectController(
-    private val projectService: ProjectService
+class ProjectControllerSimplified(
+    private val projectService: ProjectServiceSimplified,
+    private val multiFrameworkOrchestrator: MultiFrameworkOrchestrator,
+    private val fingerprinter: ProjectFingerprinter
 ) {
 
     @PostMapping("/import")
@@ -76,6 +80,51 @@ class ProjectController(
         }
     }
 
+    /**
+     * NEW: Analyze project with MULTI-FRAMEWORK support
+     * This is called by the worker to start analysis
+     */
+    @PostMapping("/{projectId}/analyze")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    fun analyzeProject(@PathVariable projectId: String): AnalysisResponse {
+        val project = projectService.getProject(projectId)
+        val projectPath = Paths.get(project.storagePath)
+
+        return try {
+            // Fingerprint the project
+            val fingerprint = fingerprinter.detectTechnologies(projectPath)
+
+            // Run ALL applicable plugins (not just best one)
+            val orchestrationResult = multiFrameworkOrchestrator.analyzeWithMultiplePlugins(
+                fingerprint,
+                projectPath
+            )
+
+            projectService.updateProjectStatus(projectId, ProjectStatus.ANALYZED)
+
+            AnalysisResponse(
+                projectId = projectId,
+                status = "SUCCESS",
+                appliedPlugins = orchestrationResult.appliedPlugins,
+                moduleCount = orchestrationResult.projectIR.modules.size,
+                endpointCount = orchestrationResult.projectIR.modules.flatMap { it.endpoints }.size,
+                warnings = orchestrationResult.mergeReport.warnings,
+                message = "Analysis complete with ${orchestrationResult.appliedPlugins.size} plugins"
+            )
+        } catch (e: Exception) {
+            projectService.updateProjectStatus(projectId, ProjectStatus.FAILED, e.message)
+            AnalysisResponse(
+                projectId = projectId,
+                status = "FAILED",
+                appliedPlugins = emptyList(),
+                moduleCount = 0,
+                endpointCount = 0,
+                warnings = listOf(e.message ?: "Unknown error"),
+                message = "Analysis failed"
+            )
+        }
+    }
+
     private fun calculateProgress(status: ProjectStatus): Int =
         when (status) {
             ProjectStatus.PENDING -> 0
@@ -93,7 +142,7 @@ class ProjectController(
             ProjectStatus.PENDING -> "Project queued for import"
             ProjectStatus.IMPORTING -> "Importing project files..."
             ProjectStatus.IMPORTED -> "Project files imported successfully"
-            ProjectStatus.ANALYZING -> "Analyzing project structure and code..."
+            ProjectStatus.ANALYZING -> "Analyzing project structure (multi-framework mode)..."
             ProjectStatus.ANALYZED -> "Analysis completed"
             ProjectStatus.GENERATING_DOCS -> "Generating documentation..."
             ProjectStatus.COMPLETED -> "Documentation generation completed"
@@ -118,8 +167,8 @@ data class ProjectResponse(
     val id: String,
     val name: String,
     val status: String,
-    val createdAt: Instant,
-    val updatedAt: Instant,
+    val createdAt: Long,
+    val updatedAt: Long,
     val repositoryUrl: String?,
     val linesOfCode: Long,
     val fileCount: Int,
@@ -143,5 +192,15 @@ data class ProjectSummary(
     val id: String,
     val name: String,
     val status: String,
-    val createdAt: Instant
+    val createdAt: Long
+)
+
+data class AnalysisResponse(
+    val projectId: String,
+    val status: String,
+    val appliedPlugins: List<String>,
+    val moduleCount: Int,
+    val endpointCount: Int,
+    val warnings: List<String>,
+    val message: String
 )

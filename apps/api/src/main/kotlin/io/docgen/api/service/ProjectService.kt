@@ -1,20 +1,25 @@
 package io.docgen.api.service
 
 import io.docgen.api.controller.ImportProjectRequest
-import io.docgen.core.model.*
-import io.docgen.core.repository.DocumentationJobRepository
-import io.docgen.core.repository.ProjectRepository
+import io.docgen.core.model.ImportType
+import io.docgen.core.model.JobStatus
+import io.docgen.core.model.ProjectStatus
+import io.docgen.core.storage.DocumentationJobData
+import io.docgen.core.storage.LocalFileStore
+import io.docgen.core.storage.ProjectData
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.nio.file.Paths
 import java.util.*
 
+/**
+ * Simplified ProjectService using file-based storage instead of PostgreSQL
+ */
 @Service
-@Transactional
-class ProjectService(
-    private val projectRepository: ProjectRepository,
-    private val documentationJobRepository: DocumentationJobRepository
+class ProjectServiceSimplified(
+    @Value("\${docgen.storage-path:./storage}") private val storagePath: String
 ) {
+    private val store = LocalFileStore(Paths.get(storagePath))
 
     fun importProject(request: ImportProjectRequest): String {
         val projectId = UUID.randomUUID().toString()
@@ -26,33 +31,38 @@ class ProjectService(
             else -> throw IllegalArgumentException("Must provide gitUrl, zipUrl, or localPath")
         }
 
-        val project = Project(
+        val project = ProjectData(
             id = projectId,
             name = request.name,
             repositoryUrl = request.gitUrl ?: request.zipUrl,
             importType = importType,
-            storagePath = Paths.get("./storage", projectId).toString(),
+            storagePath = Paths.get(storagePath, projectId).toString(),
             status = ProjectStatus.PENDING
         )
 
-        projectRepository.save(project)
-
-        // TODO: Trigger async import job
-
+        store.saveProject(project)
         return projectId
     }
 
-    fun getProject(projectId: String): Project {
-        return projectRepository.findById(projectId)
-            .orElseThrow { NoSuchElementException("Project not found: $projectId") }
+    fun getProject(projectId: String): ProjectData {
+        return store.getProject(projectId)
+            ?: throw NoSuchElementException("Project not found: $projectId")
     }
 
-    fun getAllProjects(): List<Project> {
-        return projectRepository.findAll()
+    fun getAllProjects(): List<ProjectData> {
+        return store.getAllProjects()
     }
 
-    fun getProjectsByStatus(status: ProjectStatus): List<Project> {
-        return projectRepository.findByStatus(status)
+    fun getProjectsByStatus(status: ProjectStatus): List<ProjectData> {
+        return store.getProjectsByStatus(status)
+    }
+
+    fun updateProjectStatus(projectId: String, status: ProjectStatus, errorMessage: String? = null) {
+        store.updateProjectStatus(projectId, status)
+        if (errorMessage != null) {
+            val project = getProject(projectId)
+            store.saveProject(project.copy(errorMessage = errorMessage))
+        }
     }
 
     fun generateDocumentation(projectId: String): String {
@@ -63,16 +73,30 @@ class ProjectService(
         }
 
         val jobId = UUID.randomUUID().toString()
-        val job = DocumentationJob(
+        val job = DocumentationJobData(
             id = jobId,
             projectId = projectId,
             status = JobStatus.PENDING
         )
 
-        documentationJobRepository.save(job)
-
-        // TODO: Trigger async doc generation job
-
+        store.saveJob(job)
         return jobId
+    }
+
+    fun getJob(jobId: String): DocumentationJobData {
+        return store.getJob(jobId)
+            ?: throw NoSuchElementException("Job not found: $jobId")
+    }
+
+    fun updateJobStatus(jobId: String, status: JobStatus, errorMessage: String? = null, outputPath: String? = null) {
+        store.updateJobStatus(jobId, status, errorMessage, outputPath)
+    }
+
+    fun getJobsByProject(projectId: String): List<DocumentationJobData> {
+        return store.getJobsByProject(projectId)
+    }
+
+    fun deleteProject(projectId: String) {
+        store.deleteProject(projectId)
     }
 }

@@ -1,18 +1,12 @@
 spring:
   application:
     name: universal-doc-generator-worker
-  datasource:
-    url: jdbc:postgresql://localhost:5432/docgen
-    username: docgen
-    password: docgen
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+docgen:
+  storage-path: ./storage
+  worker:
+    poll-interval-ms: 5000
+    max-concurrent-jobs: 2
 
 logging:
   level:
