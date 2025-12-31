@@ -1,7 +1,7 @@
 package io.docgen.llm.validator
 
-import io.docgen.core.ir.ProjectIR
-import io.docgen.core.ir.EndpointIR
+import io.docgen.core.model.ProjectIR
+import io.docgen.core.model.EndpointIR
 import io.docgen.llm.client.LLMClient
 import java.nio.file.Path
 

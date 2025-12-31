@@ -18,9 +18,9 @@ dependencies {
     // OpenAI SDK (community)
     implementation("com.aallam.openai:openai-client:3.6.2")
 
-    // AWS SDK for Bedrock (optional - can be removed if needed)
-    implementation(platform("software.amazon.awssdk:bom:2.21.0"))
-    implementation("software.amazon.awssdk:bedrock-runtime")
+    // AWS SDK for Bedrock (optional - commented out for now due to version conflicts)
+    // To use: uncomment and update version according to AWS SDK releases
+    // implementation("software.amazon.awssdk:bedrock-runtime:2.26.0")
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
