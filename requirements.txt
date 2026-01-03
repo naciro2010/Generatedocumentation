@@ -1,0 +1,7 @@
+# Documentation Generator Dependencies
+
+# Anthropic Claude API
+anthropic>=0.39.0
+
+# Required for Python 3.11+
+typing-extensions>=4.7.0

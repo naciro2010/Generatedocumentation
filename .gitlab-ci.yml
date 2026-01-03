@@ -1,0 +1,27 @@
+stages:
+  - generate-docs
+
+generate-docs:
+  stage: generate-docs
+  image: python:3.11-slim
+
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+  script:
+    - python generate_doc.py --repo . --output README_GENERATED.md
+
+  artifacts:
+    paths:
+      - README_GENERATED.md
+    expire_in: 30 days
+
+  variables:
+    # Set this in GitLab CI/CD Settings → Variables
+    ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+
+  only:
+    - main
+    - master
+    - develop
