@@ -1,0 +1,66 @@
+# Example GitLab CI Configuration for Documentation Generator
+# Copy this file to .gitlab-ci.yml and customize as needed
+
+stages:
+  - documentation
+
+# Generate documentation on every push to main/master
+generate-docs:
+  stage: documentation
+  image: python:3.11-slim
+
+  before_script:
+    # Install dependencies
+    - pip install --quiet -r requirements.txt
+
+  script:
+    # Generate documentation
+    - python generate_docs.py --repo . --out . --llm-provider none --max-files 400
+
+    # Show what was generated
+    - echo "Documentation generated successfully!"
+    - ls -la README.md docs/ doc_context.json
+
+  # Optional: Commit and push generated docs back to the repository
+  after_script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ] || [ "$CI_COMMIT_BRANCH" = "master" ]; then
+        git config user.name "GitLab CI"
+        git config user.email "ci@gitlab.com"
+        git add README.md docs/ doc_context.json
+        git diff --staged --quiet || git commit -m "docs: Update auto-generated documentation [skip ci]"
+        git push "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
+      fi
+
+  # Save generated docs as artifacts
+  artifacts:
+    paths:
+      - README.md
+      - docs/
+      - doc_context.json
+    expire_in: 30 days
+
+  only:
+    - main
+    - master
+
+  # Optional: only run when code files change
+  # changes:
+  #   - "**/*.py"
+  #   - "**/*.ts"
+  #   - "**/*.js"
+
+# Alternative: Generate docs on schedule (e.g., nightly)
+# generate-docs-scheduled:
+#   extends: generate-docs
+#   only:
+#     - schedules
+#   except:
+#     - branches
+
+# Alternative: Manual trigger only
+# generate-docs-manual:
+#   extends: generate-docs
+#   when: manual
+#   only:
+#     - branches

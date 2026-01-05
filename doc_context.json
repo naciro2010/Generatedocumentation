@@ -1,0 +1,427 @@
+{
+  "repository": {
+    "path": "/home/user/Generatedocumentation",
+    "name": "Generatedocumentation"
+  },
+  "tech_overview": {
+    "languages": {
+      "python": 2
+    },
+    "manifests": [
+      "requirements.txt"
+    ]
+  },
+  "structure": {
+    "top_level_dirs": [],
+    "key_files": [
+      "requirements.txt",
+      "README.md"
+    ]
+  },
+  "symbols": {
+    "classes": [
+      {
+        "name": "ProjectFingerprint",
+        "file": "generate_doc.py",
+        "line": 23
+      },
+      {
+        "name": "Endpoint",
+        "file": "generate_doc.py",
+        "line": 32
+      },
+      {
+        "name": "DatabaseQuery",
+        "file": "generate_doc.py",
+        "line": 42
+      },
+      {
+        "name": "SecurityIssue",
+        "file": "generate_doc.py",
+        "line": 51
+      },
+      {
+        "name": "ProjectStructure",
+        "file": "generate_doc.py",
+        "line": 61
+      },
+      {
+        "name": "FrameworkDetector",
+        "file": "generate_doc.py",
+        "line": 75
+      },
+      {
+        "name": "CodeExtractor",
+        "file": "generate_doc.py",
+        "line": 168
+      },
+      {
+        "name": "LLMEnricher",
+        "file": "generate_doc.py",
+        "line": 370
+      },
+      {
+        "name": "ReadmeGenerator",
+        "file": "generate_doc.py",
+        "line": 494
+      }
+    ],
+    "functions": [
+      {
+        "name": "detect",
+        "file": "generate_doc.py",
+        "line": 79,
+        "class": "FrameworkDetector"
+      },
+      {
+        "name": "_detect_struts",
+        "file": "generate_doc.py",
+        "line": 101,
+        "class": "FrameworkDetector"
+      },
+      {
+        "name": "_detect_php",
+        "file": "generate_doc.py",
+        "line": 122,
+        "class": "FrameworkDetector"
+      },
+      {
+        "name": "_detect_spring",
+        "file": "generate_doc.py",
+        "line": 143,
+        "class": "FrameworkDetector"
+      },
+      {
+        "name": "detect",
+        "file": "generate_doc.py",
+        "line": 79
+      },
+      {
+        "name": "_detect_struts",
+        "file": "generate_doc.py",
+        "line": 101
+      },
+      {
+        "name": "_detect_php",
+        "file": "generate_doc.py",
+        "line": 122
+      },
+      {
+        "name": "_detect_spring",
+        "file": "generate_doc.py",
+        "line": 143
+      },
+      {
+        "name": "extract",
+        "file": "generate_doc.py",
+        "line": 174,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_struts",
+        "file": "generate_doc.py",
+        "line": 187,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_php",
+        "file": "generate_doc.py",
+        "line": 216,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_spring",
+        "file": "generate_doc.py",
+        "line": 249,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_generic",
+        "file": "generate_doc.py",
+        "line": 279,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_sql_from_java",
+        "file": "generate_doc.py",
+        "line": 286,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_extract_sql_from_php",
+        "file": "generate_doc.py",
+        "line": 306,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_check_php_security",
+        "file": "generate_doc.py",
+        "line": 325,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "_count_files_and_lines",
+        "file": "generate_doc.py",
+        "line": 351,
+        "class": "CodeExtractor"
+      },
+      {
+        "name": "extract",
+        "file": "generate_doc.py",
+        "line": 174
+      },
+      {
+        "name": "_extract_struts",
+        "file": "generate_doc.py",
+        "line": 187
+      },
+      {
+        "name": "_extract_php",
+        "file": "generate_doc.py",
+        "line": 216
+      },
+      {
+        "name": "_extract_spring",
+        "file": "generate_doc.py",
+        "line": 249
+      },
+      {
+        "name": "_extract_generic",
+        "file": "generate_doc.py",
+        "line": 279
+      },
+      {
+        "name": "_extract_sql_from_java",
+        "file": "generate_doc.py",
+        "line": 286
+      },
+      {
+        "name": "_extract_sql_from_php",
+        "file": "generate_doc.py",
+        "line": 306
+      },
+      {
+        "name": "_check_php_security",
+        "file": "generate_doc.py",
+        "line": 325
+      },
+      {
+        "name": "_count_files_and_lines",
+        "file": "generate_doc.py",
+        "line": 351
+      },
+      {
+        "name": "__init__",
+        "file": "generate_doc.py",
+        "line": 373,
+        "class": "LLMEnricher"
+      },
+      {
+        "name": "enrich",
+        "file": "generate_doc.py",
+        "line": 377,
+        "class": "LLMEnricher"
+      },
+      {
+        "name": "_build_prompt",
+        "file": "generate_doc.py",
+        "line": 410,
+        "class": "LLMEnricher"
+      },
+      {
+        "name": "_parse_response",
+        "file": "generate_doc.py",
+        "line": 453,
+        "class": "LLMEnricher"
+      },
+      {
+        "name": "_generate_fallback",
+        "file": "generate_doc.py",
+        "line": 479,
+        "class": "LLMEnricher"
+      },
+      {
+        "name": "__init__",
+        "file": "generate_doc.py",
+        "line": 373
+      },
+      {
+        "name": "enrich",
+        "file": "generate_doc.py",
+        "line": 377
+      },
+      {
+        "name": "_build_prompt",
+        "file": "generate_doc.py",
+        "line": 410
+      },
+      {
+        "name": "_parse_response",
+        "file": "generate_doc.py",
+        "line": 453
+      },
+      {
+        "name": "_generate_fallback",
+        "file": "generate_doc.py",
+        "line": 479
+      },
+      {
+        "name": "generate",
+        "file": "generate_doc.py",
+        "line": 498,
+        "class": "ReadmeGenerator"
+      },
+      {
+        "name": "generate",
+        "file": "generate_doc.py",
+        "line": 498
+      },
+      {
+        "name": ":\n  ",
+        "file": "generate_doc.py",
+        "line": 577
+      },
+      {
+        "name": "get_all_files",
+        "file": "generate_docs.py",
+        "line": 69
+      },
+      {
+        "name": "get_file_extension",
+        "file": "generate_docs.py",
+        "line": 89
+      },
+      {
+        "name": "read_file_safe",
+        "file": "generate_docs.py",
+        "line": 94
+      },
+      {
+        "name": "get_relative_path",
+        "file": "generate_docs.py",
+        "line": 107
+      },
+      {
+        "name": "extract_tech_overview",
+        "file": "generate_docs.py",
+        "line": 119
+      },
+      {
+        "name": "extract_repo_structure",
+        "file": "generate_docs.py",
+        "line": 138
+      },
+      {
+        "name": "parse_python_symbols",
+        "file": "generate_docs.py",
+        "line": 162
+      },
+      {
+        "name": "traverse",
+        "file": "generate_docs.py",
+        "line": 178
+      },
+      {
+        "name": "parse_typescript_symbols",
+        "file": "generate_docs.py",
+        "line": 243
+      },
+      {
+        "name": "traverse",
+        "file": "generate_docs.py",
+        "line": 259
+      },
+      {
+        "name": "extract_symbols",
+        "file": "generate_docs.py",
+        "line": 319
+      },
+      {
+        "name": "extract_database_info",
+        "file": "generate_docs.py",
+        "line": 356
+      },
+      {
+        "name": "extract_functional_rules",
+        "file": "generate_docs.py",
+        "line": 456
+      },
+      {
+        "name": "generate_doc_context",
+        "file": "generate_docs.py",
+        "line": 583
+      },
+      {
+        "name": "generate_readme",
+        "file": "generate_docs.py",
+        "line": 631
+      },
+      {
+        "name": "generate_architecture_md",
+        "file": "generate_docs.py",
+        "line": 708
+      },
+      {
+        "name": "generate_database_md",
+        "file": "generate_docs.py",
+        "line": 816
+      },
+      {
+        "name": "generate_functional_rules_md",
+        "file": "generate_docs.py",
+        "line": 896
+      },
+      {
+        "name": "enhance_with_llm",
+        "file": "generate_docs.py",
+        "line": 953
+      },
+      {
+        "name": "main",
+        "file": "generate_docs.py",
+        "line": 967
+      }
+    ],
+    "routes": []
+  },
+  "database": {
+    "tables": [],
+    "migrations": [],
+    "models": [],
+    "foreign_keys": []
+  },
+  "functional_rules": [
+    {
+      "id": "FR-001",
+      "text": "if 'raise ' in stripped and not stripped.startswith('#'):",
+      "type": "validation",
+      "evidence": [
+        {
+          "file": "generate_docs.py",
+          "line": 483,
+          "snippet": "            if lang == 'python':\n                # raise statements\n                if 'raise ' in stripped and not stripped.startswith('#'):\n                    # Extract error message\n                    error_match = re.search(r'raise\\s+\\w+\\([\"\\']([^\"\\']+)[\"\\']', stripped)"
+        }
+      ]
+    },
+    {
+      "id": "FR-002",
+      "text": "elif 'assert ' in stripped and not stripped.startswith('#'):",
+      "type": "assertion",
+      "evidence": [
+        {
+          "file": "generate_docs.py",
+          "line": 509,
+          "snippet": "\n                # assert statements\n                elif 'assert ' in stripped and not stripped.startswith('#'):\n                    start_line = max(0, i - 2)\n                    end_line = min(len(lines), i + 3)"
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total_files": 7,
+    "total_classes": 9,
+    "total_functions": 59,
+    "total_routes": 0,
+    "total_tables": 0,
+    "total_rules": 2
+  }
+}
