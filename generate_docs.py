@@ -1030,89 +1030,197 @@ def generate_doc_context(repo_path: Path, max_files: int = 400, use_cache: bool 
 # MARKDOWN GENERATION
 # ============================================================================
 
-def generate_readme(context: Dict[str, Any]) -> str:
-    """Generate README.md content."""
+def generate_project_overview(context: Dict[str, Any]) -> str:
+    """Generate PROJECT_OVERVIEW.md content."""
     # Check if we have LLM enhancement
-    llm_content = context.get('llm_enhanced', {}).get('readme_enhancement')
+    llm_content = context.get('llm_enhanced', {}).get('project_overview')
     if llm_content:
         # If it looks like full markdown, return it
         if '# ' in llm_content:
             return llm_content
-        return f"# Documentation\n\n{llm_content}\n\n---\n*Enhanced by AI analysis*\n"
+        return f"# Project Overview\n\n{llm_content}\n\n---\n*Enhanced by AI analysis*\n"
 
     repo_name = context['repository']['name']
     tech = context['tech_overview']
     stats = context['stats']
+    structure = context['structure']
+    symbols = context['symbols']
 
     # Detect main language
     languages = tech.get('languages', {})
     main_lang = max(languages.items(), key=lambda x: x[1])[0] if languages else 'Unknown'
 
-    # Detect how to run
-    manifests = tech.get('manifests', [])
-    run_instructions = []
+    doc = f"""# {repo_name} - Project Overview
 
-    if any('package.json' in m for m in manifests):
-        run_instructions.append("```bash\nnpm install\nnpm start\n```")
-    if any('requirements.txt' in m or 'pyproject.toml' in m for m in manifests):
-        run_instructions.append("```bash\npip install -r requirements.txt\npython main.py  # or your entry point\n```")
-    if any('Dockerfile' in m for m in manifests):
-        run_instructions.append("```bash\ndocker build -t {} .\ndocker run {}\n```".format(repo_name, repo_name))
+## Project Summary
 
-    readme = f"""# {repo_name}
+**Name:** {repo_name}
+**Primary Language:** {main_lang}
+**Type:** {_infer_project_type(tech, symbols, context.get('database', {}))}
 
-## Overview
+## Codebase Statistics
 
-This repository is primarily written in **{main_lang}** and contains:
-- {stats['total_classes']} classes
-- {stats['total_functions']} functions
-- {stats['total_routes']} API routes
-- {stats['total_tables']} database tables
-
-## Documentation
-
-- [Architecture](docs/architecture.md) - System architecture and component diagrams
-- [Database](docs/database.md) - Database schema and relationships
-- [Functional Rules](docs/functional_rules.md) - Business rules and validations
+| Metric | Count |
+|--------|-------|
+| Total Files | {stats['total_files']} |
+| Classes | {stats['total_classes']} |
+| Functions/Methods | {stats['total_functions']} |
+| API Routes | {stats['total_routes']} |
+| Database Tables | {stats['total_tables']} |
+| Business Rules | {stats['total_rules']} |
 
 ## Technology Stack
 
+### Languages
 """
 
     if languages:
-        readme += "**Languages:**\n"
+        doc += "\n| Language | Files |\n|----------|-------|\n"
         for lang, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
-            readme += f"- {lang.capitalize()}: {count} files\n"
-        readme += "\n"
+            doc += f"| {lang.capitalize()} | {count} |\n"
+        doc += "\n"
 
+    manifests = tech.get('manifests', [])
     if manifests:
-        readme += "**Configuration Files:**\n"
+        doc += "### Build & Configuration Files\n\n"
         for manifest in manifests:
-            readme += f"- `{manifest}`\n"
-        readme += "\n"
+            doc += f"- `{manifest}`\n"
+        doc += "\n"
 
-    if run_instructions:
-        readme += "## Quick Start\n\n"
-        readme += "\n".join(run_instructions)
-        readme += "\n"
-
-    readme += """
-## Project Structure
+    doc += """### Detected Technologies
 
 """
 
-    dirs = context['structure'].get('top_level_dirs', [])
-    if dirs:
-        for d in sorted(dirs)[:10]:  # Show top 10 dirs
-            readme += f"- `{d}/`\n"
+    # Detect technologies
+    if any('package.json' in m for m in manifests):
+        doc += "- **Node.js** - JavaScript/TypeScript runtime\n"
+        doc += "- **npm/yarn** - Package management\n"
+    if any('requirements.txt' in m or 'pyproject.toml' in m for m in manifests):
+        doc += "- **Python** - Core language\n"
+        doc += "- **pip** - Package management\n"
+    if any('build.gradle' in m or 'pom.xml' in m for m in manifests):
+        doc += "- **Java/JVM** - Runtime platform\n"
+        doc += "- **Gradle/Maven** - Build automation\n"
+    if any('Dockerfile' in m for m in manifests):
+        doc += "- **Docker** - Containerization\n"
+    if any('docker-compose' in m for m in manifests):
+        doc += "- **Docker Compose** - Multi-container orchestration\n"
 
-    readme += """
+    if stats['total_tables'] > 0:
+        doc += "- **SQL Database** - Data persistence\n"
+
+    doc += "\n## Module Structure\n\n"
+
+    dirs = structure.get('top_level_dirs', [])
+    if dirs:
+        doc += "| Directory | Purpose |\n|-----------|----------|\n"
+        for d in sorted(dirs):
+            purpose = _infer_directory_purpose(d)
+            doc += f"| `{d}/` | {purpose} |\n"
+        doc += "\n"
+
+    # Key Components
+    classes = symbols.get('classes', [])
+    if classes:
+        doc += f"## Key Classes ({len(classes)} total)\n\n"
+        doc += "| Class | Location |\n|-------|----------|\n"
+        for cls in classes[:20]:  # Top 20
+            doc += f"| `{cls['name']}` | {cls['file']}:{cls.get('line', '')} |\n"
+        if len(classes) > 20:
+            doc += f"\n*...and {len(classes) - 20} more classes*\n"
+        doc += "\n"
+
+    # API Routes
+    routes = symbols.get('routes', [])
+    if routes:
+        doc += f"## API Endpoints ({len(routes)} total)\n\n"
+        doc += "| Method | Path | Handler |\n|--------|------|----------|\n"
+        for route in sorted(routes, key=lambda x: (x.get('path', ''), x.get('method', '')))[:30]:
+            method = route.get('method', 'N/A')
+            path = route.get('path', 'N/A')
+            handler = route.get('handler', route.get('router', 'N/A'))
+            doc += f"| {method} | `{path}` | {handler} |\n"
+        if len(routes) > 30:
+            doc += f"\n*...and {len(routes) - 30} more endpoints*\n"
+        doc += "\n"
+
+    doc += """## Related Documentation
+
+- [Architecture](docs/architecture.md) - System architecture and design
+- [Database](docs/database.md) - Database schema and data models
+- [Functional Rules](docs/functional_rules.md) - Business logic and validation rules
 
 ---
-*This documentation was automatically generated.*
+*Generated by automated code analysis*
 """
 
-    return readme
+    return doc
+
+
+def _infer_project_type(tech, symbols, database):
+    """Infer project type from characteristics."""
+    routes = symbols.get('routes', [])
+    tables = database.get('tables', [])
+
+    if len(routes) > 0:
+        if len(tables) > 0:
+            return "Web API with Database (Backend Application)"
+        return "Web API / REST Service"
+    elif len(tables) > 0:
+        return "Database Application"
+    elif 'python' in tech.get('languages', {}):
+        return "Python Application"
+    elif 'javascript' in tech.get('languages', {}) or 'typescript' in tech.get('languages', {}):
+        return "JavaScript/TypeScript Application"
+    elif 'kotlin' in tech.get('languages', {}) or 'java' in tech.get('languages', {}):
+        return "JVM Application"
+    else:
+        return "Software Application"
+
+
+def _infer_directory_purpose(dirname):
+    """Infer directory purpose from name."""
+    dirname_lower = dirname.lower()
+
+    purposes = {
+        'src': 'Source code',
+        'lib': 'Library code',
+        'app': 'Application code',
+        'test': 'Test files',
+        'tests': 'Test files',
+        'doc': 'Documentation',
+        'docs': 'Documentation',
+        'build': 'Build artifacts',
+        'dist': 'Distribution files',
+        'config': 'Configuration files',
+        'scripts': 'Utility scripts',
+        'migrations': 'Database migrations',
+        'api': 'API endpoints',
+        'controllers': 'HTTP controllers',
+        'models': 'Data models',
+        'views': 'View templates',
+        'services': 'Business logic services',
+        'utils': 'Utility functions',
+        'helpers': 'Helper functions',
+        'middleware': 'Middleware components',
+        'routes': 'Route definitions',
+        'public': 'Public assets',
+        'static': 'Static files',
+        'assets': 'Application assets',
+        'resources': 'Application resources',
+        'gradle': 'Gradle build system',
+        'maven': 'Maven build system',
+        '.git': 'Git version control',
+        '.github': 'GitHub configuration',
+        'node_modules': 'Node.js dependencies',
+        'vendor': 'Third-party dependencies',
+    }
+
+    for key, purpose in purposes.items():
+        if key in dirname_lower:
+            return purpose
+
+    return 'Application module'
 
 
 def generate_architecture_md(context: Dict[str, Any]) -> str:
@@ -1448,7 +1556,7 @@ class LLMClient:
         return ""
 
 
-def enhance_with_llm(context: Dict[str, Any], provider: str, api_key: Optional[str] = None, 
+def enhance_with_llm(context: Dict[str, Any], provider: str, api_key: Optional[str] = None,
                      model: Optional[str] = None, base_url: Optional[str] = None) -> Dict[str, str]:
     """Enhance documentation with LLM using extracted facts."""
     if provider == 'none':
@@ -1463,54 +1571,277 @@ def enhance_with_llm(context: Dict[str, Any], provider: str, api_key: Optional[s
         config = LLMConfig(provider=provider, api_key=api_key, model=model, base_url=base_url)
         client = LLMClient(config)
 
-        # Prepare context for LLM
-        # We don't want to send everything if it's too big, but let's start simple
-        simplified_context = {
-            'project_name': context.get('project_name'),
-            'languages': context.get('languages'),
-            'structure': context.get('structure'),
-            'key_symbols': {
-                'classes': [c['name'] for c in context.get('symbols', {}).get('classes', [])[:20]],
-                'functions': [f['name'] for f in context.get('symbols', {}).get('functions', [])[:30]],
-                'routes': context.get('symbols', {}).get('routes', [])[:20]
+        # Prepare OPTIMIZED context for LLM with maximum relevant information
+        repo = context.get('repository', {})
+        tech = context.get('tech_overview', {})
+        structure = context.get('structure', {})
+        symbols = context.get('symbols', {})
+        database = context.get('database', {})
+        rules = context.get('functional_rules', [])
+        stats = context.get('stats', {})
+
+        # Organize classes by file for better context
+        classes_by_file = defaultdict(list)
+        for cls in symbols.get('classes', [])[:50]:
+            classes_by_file[cls.get('file', 'unknown')].append(cls['name'])
+
+        # Organize functions by file and class
+        functions_by_context = defaultdict(list)
+        for func in symbols.get('functions', [])[:100]:
+            key = func.get('class', func.get('file', 'unknown'))
+            functions_by_context[key].append(func['name'])
+
+        # Group routes by path prefix for API structure understanding
+        routes_by_prefix = defaultdict(list)
+        for route in symbols.get('routes', []):
+            path = route.get('path', '/')
+            prefix = path.split('/')[1] if len(path.split('/')) > 1 else 'root'
+            routes_by_prefix[prefix].append({
+                'method': route.get('method'),
+                'path': path,
+                'handler': route.get('handler', 'unknown')
+            })
+
+        # Extract key technologies from manifests
+        technologies = []
+        for manifest in tech.get('manifests', []):
+            if 'package.json' in manifest:
+                technologies.append('Node.js/npm')
+            elif 'requirements.txt' in manifest or 'pyproject.toml' in manifest:
+                technologies.append('Python')
+            elif 'build.gradle' in manifest or 'pom.xml' in manifest:
+                technologies.append('Java/JVM')
+            elif 'Cargo.toml' in manifest:
+                technologies.append('Rust')
+            elif 'go.mod' in manifest:
+                technologies.append('Go')
+            elif 'Dockerfile' in manifest:
+                technologies.append('Docker')
+
+        # Build enriched context
+        enriched_context = {
+            'project': {
+                'name': repo.get('name', 'Unknown Project'),
+                'path': repo.get('path', ''),
             },
-            'dependencies': context.get('dependencies', {})
+            'statistics': {
+                'total_files': stats.get('total_files', 0),
+                'total_classes': stats.get('total_classes', 0),
+                'total_functions': stats.get('total_functions', 0),
+                'total_routes': stats.get('total_routes', 0),
+                'total_tables': stats.get('total_tables', 0),
+                'total_rules': stats.get('total_rules', 0),
+            },
+            'technology_stack': {
+                'languages': tech.get('languages', {}),
+                'detected_technologies': list(set(technologies)),
+                'manifests': tech.get('manifests', []),
+            },
+            'architecture': {
+                'top_level_directories': structure.get('top_level_dirs', []),
+                'key_config_files': structure.get('key_files', []),
+                'classes_by_file': dict(list(classes_by_file.items())[:20]),
+                'function_contexts': dict(list(functions_by_context.items())[:30]),
+            },
+            'api_structure': {
+                'route_groups': {k: v[:10] for k, v in routes_by_prefix.items()},
+                'total_endpoints': len(symbols.get('routes', [])),
+            },
+            'data_layer': {
+                'tables': [{'name': t['name'], 'type': t.get('type'), 'source': t.get('source')}
+                          for t in database.get('tables', [])[:30]],
+                'models': [{'class': m['class'], 'table': m['table']}
+                          for m in database.get('models', [])[:30]],
+                'has_migrations': len(database.get('migrations', [])) > 0,
+            },
+            'business_logic': {
+                'validation_rules_count': len([r for r in rules if r.get('type') == 'validation']),
+                'test_evidence_count': len([r for r in rules if r.get('type') == 'test_evidence']),
+                'sample_rules': [{'id': r.get('id'), 'text': r.get('text')[:100], 'type': r.get('type')}
+                                for r in rules[:15]],
+            }
         }
 
-        prompt = f"""
-        You are a senior technical writer. Based on the following technical facts about a software project, 
-        generate a professional and clear README.md and ARCHITECTURE.md content.
-        
-        FACTS:
-        {json.dumps(simplified_context, indent=2)}
-        
-        REQUIREMENTS:
-        - Focus on the business value and what the project actually does.
-        - Explain the architecture based on the detected symbols and structure.
-        - Use clean Markdown.
-        - Be concise but thorough.
-        
-        Return a JSON with two keys: 'readme_enhancement' and 'architecture_enhancement'.
-        Each should contain the enhanced Markdown content.
-        """
+        # OPTIMIZED PROMPT with structured instructions
+        prompt = f"""You are an expert software architect and technical writer. Your task is to generate comprehensive, professional documentation for a software project based on extracted code analysis.
 
-        response = client.analyze(prompt)
-        
+# PROJECT ANALYSIS DATA
+{json.dumps(enriched_context, indent=2)}
+
+# YOUR MISSION
+Generate two complete markdown documents that will help developers understand and work with this codebase:
+
+## 1. PROJECT_OVERVIEW.md Enhancement
+Create a comprehensive project overview documentation that includes:
+
+### Required Sections:
+- **Project Summary**:
+  * Name and purpose inferred from structure, APIs, and database schema
+  * Primary programming language and framework
+  * Architectural style (monolithic, microservices, layered, etc.)
+- **Technical Stack**:
+  * Programming languages with file counts
+  * Frameworks and libraries (detected from manifests)
+  * Build tools and dependency management
+  * Database technology
+  * Infrastructure (Docker, Kubernetes, etc.)
+- **Codebase Statistics**:
+  * Total files, classes, functions
+  * Lines of code estimate
+  * Test coverage indicators
+  * API endpoints count
+  * Database tables count
+- **Module Structure**:
+  * Top-level directories with their purposes
+  * Key modules and their responsibilities
+  * Dependencies between modules
+- **Key Components**:
+  * Main classes and their roles
+  * Important functions/methods grouped by domain
+  * Design patterns used
+- **Configuration & Setup**:
+  * Required environment variables
+  * Configuration files location
+  * Build and run commands
+- **Testing Strategy**:
+  * Test frameworks used
+  * Test organization
+  * How to run tests
+
+### Style Guidelines:
+- Focus on technical accuracy over marketing
+- Use tables for structured data (languages, modules, components)
+- Include file:line references for key components
+- Be concise and factual
+- Use code blocks only for actual commands or code snippets
+
+## 2. ARCHITECTURE.md Enhancement
+Create an in-depth architecture document that includes:
+
+### Required Sections:
+- **System Overview**: Purpose, scope, and architectural style
+- **Architecture Diagram**: Mermaid diagram showing major components and their relationships
+- **Component Breakdown**: Detailed description of each major component/module
+  * Responsibility
+  * Key classes/functions
+  * Dependencies
+- **Data Flow**: How data moves through the system (with sequence diagram)
+- **API Layer**:
+  * Complete endpoint listing grouped by domain
+  * Request/response patterns
+  * Authentication/authorization approach (if detectable)
+- **Data Layer**:
+  * Database schema (ER diagram in Mermaid)
+  * ORM/data access patterns
+  * Migration strategy
+- **Business Logic Layer**: Key services, validation rules, business constraints
+- **Technology Decisions**: Why these technologies make sense together
+- **Design Patterns**: Detected patterns (MVC, Repository, Service Layer, etc.)
+- **Security Considerations**: Based on detected validation rules
+- **Performance Considerations**: Caching, database indexes, etc.
+- **Scalability**: How the architecture supports growth
+- **Testing Strategy**: Test file patterns and coverage areas
+
+### Style Guidelines:
+- Use Mermaid diagrams extensively (component, sequence, ER diagrams)
+- Include code references (file:line format)
+- Explain "why" not just "what"
+- Connect technical decisions to business value
+- Use subsections for readability
+
+# OUTPUT FORMAT
+Return a valid JSON object with exactly this structure. CRITICAL: Properly escape all special characters in the JSON strings (backslashes, quotes, newlines).
+
+```json
+{{
+  "project_overview": "# Full PROJECT_OVERVIEW.md markdown content here...",
+  "architecture_enhancement": "# Full ARCHITECTURE.md markdown content here..."
+}}
+```
+
+# IMPORTANT CONSTRAINTS
+- Use ONLY the provided data - do not invent features or technologies
+- Infer purpose from structure, naming, routes, and database schema
+- If something is unclear, state it professionally (e.g., "This appears to be...")
+- Include ALL detected API routes in architecture doc
+- Use proper markdown formatting with headers, lists, code blocks, and diagrams
+- Make the documentation immediately useful for a new developer joining the project
+- Total output should be comprehensive (aim for 300-500 lines per document)
+- **JSON FORMATTING**: Escape newlines as \\n, quotes as \\", backslashes as \\\\
+- **VALIDATE**: Ensure your JSON is valid before outputting
+
+Generate the JSON response now. Output ONLY the JSON, nothing else:"""
+
+        # Use higher token limit for comprehensive output
+        response = client.analyze(prompt, max_tokens=8000)
+
         # Try to parse JSON from response (sometimes LLMs wrap it in code blocks)
         try:
-            # Simple regex to find JSON block
+            # Try to find JSON in code blocks first
+            json_block_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if json_block_match:
+                enhancements = json.loads(json_block_match.group(1))
+                print("✅ Documentation enhanced successfully!")
+                return enhancements
+
+            # Fallback: try to find raw JSON
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 enhancements = json.loads(json_match.group(0))
+                print("✅ Documentation enhanced successfully!")
                 return enhancements
-        except Exception:
-            print("Warning: Could not parse LLM response as JSON. Using raw response.")
-            return {'readme_enhancement': response, 'architecture_enhancement': response}
+
+            # If no JSON found, wrap the response
+            print("⚠️  Could not parse JSON response, using raw content")
+            return {
+                'project_overview': response[:len(response)//2],
+                'architecture_enhancement': response[len(response)//2:]
+            }
+
+        except json.JSONDecodeError as je:
+            print(f"⚠️  JSON parse error: {je}")
+            print("🔄 Attempting intelligent content extraction...")
+
+            # Try to extract PROJECT_OVERVIEW and ARCHITECTURE sections intelligently
+            overview_content = ""
+            arch_content = ""
+
+            # Look for markdown headers that indicate sections
+            overview_match = re.search(r'(?:project_overview["\']\s*:\s*["\']|# Project|# .*Overview)', response, re.IGNORECASE)
+            arch_match = re.search(r'(?:architecture_enhancement["\']\s*:\s*["\']|# Architecture|# System)', response, re.IGNORECASE)
+
+            if overview_match and arch_match:
+                # Split at architecture section
+                overview_content = response[overview_match.start():arch_match.start()]
+                arch_content = response[arch_match.start():]
+
+                # Clean up JSON artifacts
+                overview_content = re.sub(r'project_overview["\']\s*:\s*["\']', '', overview_content)
+                overview_content = re.sub(r'["\']?\s*,?\s*architecture_enhancement', '', overview_content)
+                arch_content = re.sub(r'architecture_enhancement["\']\s*:\s*["\']', '', arch_content)
+                arch_content = re.sub(r'["\'}]+\s*$', '', arch_content)
+
+                print("✅ Content extracted successfully!")
+                return {
+                    'project_overview': overview_content.strip(),
+                    'architecture_enhancement': arch_content.strip()
+                }
+
+            # Ultimate fallback: split in half
+            print("⚠️  Using fallback split strategy")
+            parts = response.split('\n\n')
+            mid = len(parts) // 2
+            return {
+                'project_overview': '\n\n'.join(parts[:mid]),
+                'architecture_enhancement': '\n\n'.join(parts[mid:])
+            }
 
     except Exception as e:
         print(f"❌ LLM Enhancement failed: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
         return {}
-    
+
     return {}
 
 
@@ -1641,11 +1972,11 @@ def main():
     docs_dir = out_path / 'docs'
     docs_dir.mkdir(exist_ok=True)
 
-    # Generate README.md
-    readme_file = out_path / 'README.md'
-    print(f"  └─ Writing: {readme_file}")
-    with open(readme_file, 'w', encoding='utf-8') as f:
-        f.write(generate_readme(context))
+    # Generate PROJECT_OVERVIEW.md
+    overview_file = out_path / 'PROJECT_OVERVIEW.md'
+    print(f"  └─ Writing: {overview_file}")
+    with open(overview_file, 'w', encoding='utf-8') as f:
+        f.write(generate_project_overview(context))
 
     # Generate architecture.md
     arch_file = docs_dir / 'architecture.md'
@@ -1667,7 +1998,7 @@ def main():
 
     print("\n✅ Documentation generation complete!")
     print(f"\nGenerated files:")
-    print(f"  - {readme_file}")
+    print(f"  - {overview_file}")
     print(f"  - {arch_file}")
     print(f"  - {db_file}")
     print(f"  - {rules_file}")

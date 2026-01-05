@@ -250,64 +250,44 @@ Target users: End customers (web/mobile) and back-office staff.
 
 ## Overview
 
-This is a Kotlin-based application built with Gradle, containerized with Docker for easy deployment and scalability.
+This repository is primarily written in **kotlin** and contains:
+- 0 classes
+- 0 functions
+- 0 API routes
+- 30 database tables
+
+## Documentation
+
+- [Architecture](docs/architecture.md) - System architecture and component diagrams
+- [Database](docs/database.md) - Database schema and relationships
+- [Functional Rules](docs/functional_rules.md) - Business rules and validations
+
+## Technology Stack
+
+**Languages:**
+- Kotlin: 81 files
+- Javascript: 1 files
+
+**Configuration Files:**
+- `Dockerfile`
+- `build.gradle.kts`
+- `docker-compose.yml`
 
 ## Quick Start
 
-### Prerequisites
-- Docker and Docker Compose
-- Java Development Kit (JDK 11 or higher)
-- Gradle (or use the Gradle wrapper included in the project)
-
-### Building the Project
-
 ```bash
-./gradlew build
+docker build -t backend .
+docker run backend
 ```
-
-### Running with Docker
-
-```bash
-docker-compose up
-```
-
-The application will start in a containerized environment with all dependencies properly configured.
 
 ## Project Structure
 
-```
-.
-├── src/                    # Application source code
-├── gradle/                 # Gradle wrapper files
-├── build.gradle.kts       # Gradle build configuration (Kotlin DSL)
-├── Dockerfile             # Container image definition
-├── docker-compose.yml     # Multi-container orchestration
-└── README.md             # This file
-```
+- `.claude/`
+- `.gradle/`
+- `.kotlin/`
+- `gradle/`
+- `src/`
 
-## Development
 
-### Build Configuration
-
-The project uses **Gradle** with Kotlin DSL (`build.gradle.kts`) for dependency management and build automation.
-
-### Code Organization
-
-Source code is organized in the `src/` directory following standard Kotlin project conventions.
-
-## Deployment
-
-The project includes Docker support for containerized deployment:
-
-- **Dockerfile**: Defines the application container image
-- **docker-compose.yml**: Orchestrates multi-container deployment
-
-Deploy to any Docker-compatible environment (Kubernetes, Docker Swarm, cloud platforms, etc.).
-
-## Contributing
-
-Following Kotlin best practices and project conventions when contributing code.
-
-## License
-
-Refer to LICENSE file for licensing information.
+---
+*This documentation was automatically generated.*
