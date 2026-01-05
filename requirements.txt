@@ -4,10 +4,10 @@
 # Tree-sitter for code parsing (Python, TypeScript, JavaScript)
 tree-sitter-language-pack>=0.1.0
 
-# Optional: LLM providers (uncomment if using --llm-provider)
-# openai>=1.0.0
-# anthropic>=0.39.0
-# requests>=2.31.0
+# Optional: LLM providers
+openai>=1.0.0
+anthropic>=0.39.0
+requests>=2.31.0
 
 # Required for Python 3.11+
 typing-extensions>=4.7.0

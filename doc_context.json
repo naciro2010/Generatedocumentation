@@ -1,427 +1,482 @@
 {
   "repository": {
-    "path": "/home/user/Generatedocumentation",
-    "name": "Generatedocumentation"
+    "path": "/Users/mohamedennaciri/repository/gitlab.io/InvestProMaroc/backend",
+    "name": "backend"
   },
   "tech_overview": {
     "languages": {
-      "python": 2
+      "kotlin": 81,
+      "javascript": 1
     },
     "manifests": [
-      "requirements.txt"
+      "Dockerfile",
+      "build.gradle.kts",
+      "docker-compose.yml"
     ]
   },
   "structure": {
-    "top_level_dirs": [],
+    "top_level_dirs": [
+      ".kotlin",
+      ".claude",
+      "gradle",
+      ".gradle",
+      "src"
+    ],
     "key_files": [
-      "requirements.txt",
-      "README.md"
+      "Dockerfile",
+      "README.md",
+      "build.gradle.kts",
+      "docker-compose.yml"
     ]
   },
   "symbols": {
-    "classes": [
-      {
-        "name": "ProjectFingerprint",
-        "file": "generate_doc.py",
-        "line": 23
-      },
-      {
-        "name": "Endpoint",
-        "file": "generate_doc.py",
-        "line": 32
-      },
-      {
-        "name": "DatabaseQuery",
-        "file": "generate_doc.py",
-        "line": 42
-      },
-      {
-        "name": "SecurityIssue",
-        "file": "generate_doc.py",
-        "line": 51
-      },
-      {
-        "name": "ProjectStructure",
-        "file": "generate_doc.py",
-        "line": 61
-      },
-      {
-        "name": "FrameworkDetector",
-        "file": "generate_doc.py",
-        "line": 75
-      },
-      {
-        "name": "CodeExtractor",
-        "file": "generate_doc.py",
-        "line": 168
-      },
-      {
-        "name": "LLMEnricher",
-        "file": "generate_doc.py",
-        "line": 370
-      },
-      {
-        "name": "ReadmeGenerator",
-        "file": "generate_doc.py",
-        "line": 494
-      }
-    ],
-    "functions": [
-      {
-        "name": "detect",
-        "file": "generate_doc.py",
-        "line": 79,
-        "class": "FrameworkDetector"
-      },
-      {
-        "name": "_detect_struts",
-        "file": "generate_doc.py",
-        "line": 101,
-        "class": "FrameworkDetector"
-      },
-      {
-        "name": "_detect_php",
-        "file": "generate_doc.py",
-        "line": 122,
-        "class": "FrameworkDetector"
-      },
-      {
-        "name": "_detect_spring",
-        "file": "generate_doc.py",
-        "line": 143,
-        "class": "FrameworkDetector"
-      },
-      {
-        "name": "detect",
-        "file": "generate_doc.py",
-        "line": 79
-      },
-      {
-        "name": "_detect_struts",
-        "file": "generate_doc.py",
-        "line": 101
-      },
-      {
-        "name": "_detect_php",
-        "file": "generate_doc.py",
-        "line": 122
-      },
-      {
-        "name": "_detect_spring",
-        "file": "generate_doc.py",
-        "line": 143
-      },
-      {
-        "name": "extract",
-        "file": "generate_doc.py",
-        "line": 174,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_struts",
-        "file": "generate_doc.py",
-        "line": 187,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_php",
-        "file": "generate_doc.py",
-        "line": 216,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_spring",
-        "file": "generate_doc.py",
-        "line": 249,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_generic",
-        "file": "generate_doc.py",
-        "line": 279,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_sql_from_java",
-        "file": "generate_doc.py",
-        "line": 286,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_extract_sql_from_php",
-        "file": "generate_doc.py",
-        "line": 306,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_check_php_security",
-        "file": "generate_doc.py",
-        "line": 325,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "_count_files_and_lines",
-        "file": "generate_doc.py",
-        "line": 351,
-        "class": "CodeExtractor"
-      },
-      {
-        "name": "extract",
-        "file": "generate_doc.py",
-        "line": 174
-      },
-      {
-        "name": "_extract_struts",
-        "file": "generate_doc.py",
-        "line": 187
-      },
-      {
-        "name": "_extract_php",
-        "file": "generate_doc.py",
-        "line": 216
-      },
-      {
-        "name": "_extract_spring",
-        "file": "generate_doc.py",
-        "line": 249
-      },
-      {
-        "name": "_extract_generic",
-        "file": "generate_doc.py",
-        "line": 279
-      },
-      {
-        "name": "_extract_sql_from_java",
-        "file": "generate_doc.py",
-        "line": 286
-      },
-      {
-        "name": "_extract_sql_from_php",
-        "file": "generate_doc.py",
-        "line": 306
-      },
-      {
-        "name": "_check_php_security",
-        "file": "generate_doc.py",
-        "line": 325
-      },
-      {
-        "name": "_count_files_and_lines",
-        "file": "generate_doc.py",
-        "line": 351
-      },
-      {
-        "name": "__init__",
-        "file": "generate_doc.py",
-        "line": 373,
-        "class": "LLMEnricher"
-      },
-      {
-        "name": "enrich",
-        "file": "generate_doc.py",
-        "line": 377,
-        "class": "LLMEnricher"
-      },
-      {
-        "name": "_build_prompt",
-        "file": "generate_doc.py",
-        "line": 410,
-        "class": "LLMEnricher"
-      },
-      {
-        "name": "_parse_response",
-        "file": "generate_doc.py",
-        "line": 453,
-        "class": "LLMEnricher"
-      },
-      {
-        "name": "_generate_fallback",
-        "file": "generate_doc.py",
-        "line": 479,
-        "class": "LLMEnricher"
-      },
-      {
-        "name": "__init__",
-        "file": "generate_doc.py",
-        "line": 373
-      },
-      {
-        "name": "enrich",
-        "file": "generate_doc.py",
-        "line": 377
-      },
-      {
-        "name": "_build_prompt",
-        "file": "generate_doc.py",
-        "line": 410
-      },
-      {
-        "name": "_parse_response",
-        "file": "generate_doc.py",
-        "line": 453
-      },
-      {
-        "name": "_generate_fallback",
-        "file": "generate_doc.py",
-        "line": 479
-      },
-      {
-        "name": "generate",
-        "file": "generate_doc.py",
-        "line": 498,
-        "class": "ReadmeGenerator"
-      },
-      {
-        "name": "generate",
-        "file": "generate_doc.py",
-        "line": 498
-      },
-      {
-        "name": ":\n  ",
-        "file": "generate_doc.py",
-        "line": 577
-      },
-      {
-        "name": "get_all_files",
-        "file": "generate_docs.py",
-        "line": 69
-      },
-      {
-        "name": "get_file_extension",
-        "file": "generate_docs.py",
-        "line": 89
-      },
-      {
-        "name": "read_file_safe",
-        "file": "generate_docs.py",
-        "line": 94
-      },
-      {
-        "name": "get_relative_path",
-        "file": "generate_docs.py",
-        "line": 107
-      },
-      {
-        "name": "extract_tech_overview",
-        "file": "generate_docs.py",
-        "line": 119
-      },
-      {
-        "name": "extract_repo_structure",
-        "file": "generate_docs.py",
-        "line": 138
-      },
-      {
-        "name": "parse_python_symbols",
-        "file": "generate_docs.py",
-        "line": 162
-      },
-      {
-        "name": "traverse",
-        "file": "generate_docs.py",
-        "line": 178
-      },
-      {
-        "name": "parse_typescript_symbols",
-        "file": "generate_docs.py",
-        "line": 243
-      },
-      {
-        "name": "traverse",
-        "file": "generate_docs.py",
-        "line": 259
-      },
-      {
-        "name": "extract_symbols",
-        "file": "generate_docs.py",
-        "line": 319
-      },
-      {
-        "name": "extract_database_info",
-        "file": "generate_docs.py",
-        "line": 356
-      },
-      {
-        "name": "extract_functional_rules",
-        "file": "generate_docs.py",
-        "line": 456
-      },
-      {
-        "name": "generate_doc_context",
-        "file": "generate_docs.py",
-        "line": 583
-      },
-      {
-        "name": "generate_readme",
-        "file": "generate_docs.py",
-        "line": 631
-      },
-      {
-        "name": "generate_architecture_md",
-        "file": "generate_docs.py",
-        "line": 708
-      },
-      {
-        "name": "generate_database_md",
-        "file": "generate_docs.py",
-        "line": 816
-      },
-      {
-        "name": "generate_functional_rules_md",
-        "file": "generate_docs.py",
-        "line": 896
-      },
-      {
-        "name": "enhance_with_llm",
-        "file": "generate_docs.py",
-        "line": 953
-      },
-      {
-        "name": "main",
-        "file": "generate_docs.py",
-        "line": 967
-      }
-    ],
+    "classes": [],
+    "functions": [],
     "routes": []
   },
   "database": {
-    "tables": [],
-    "migrations": [],
+    "tables": [
+      {
+        "name": "users",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "user_roles",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "partenaires",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "fournisseurs",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "comptes_bancaires",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "dimensions_analytiques",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "valeurs_dimensions",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "conventions",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "convention_partenaires",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "avenants",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "budgets",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "lignes_budget",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "imputations_previsionnelles",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "versements_previsionnels",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "subventions",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "echeances_subvention",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "marches",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "marche_lignes",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "avenant_marches",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "bons_commande",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "depenses_investissement",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "commissions",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "decomptes",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "decompte_retenues",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "decompte_imputations",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "ordres_paiement",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "op_imputations",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "paiements",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "paiement_imputations",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      },
+      {
+        "name": "imputations_analytiques",
+        "source": "src/main/resources/db/migration/V1__clean_schema.sql",
+        "type": "sql"
+      }
+    ],
+    "migrations": [
+      "MIGRATION_SUMMARY.md",
+      "MIGRATION_GUIDE.md",
+      "src/main/resources/db/test-data.sql",
+      "src/main/resources/db/README-TEST-DATA.md",
+      "src/main/resources/db/migration/V6__seed_dimensions_analytiques.sql",
+      "src/main/resources/db/migration/V2__update_user_passwords.sql",
+      "src/main/resources/db/migration/V7__seed_rich_test_data.sql",
+      "src/main/resources/db/migration/V1__clean_schema.sql",
+      "src/main/resources/db/migration/V8__seed_budgets_marches_decomptes_paiements.sql",
+      "src/main/resources/db/migration/V3__seed_test_conventions.sql",
+      "src/main/resources/db/migration/V4__seed_test_conventions_fixed.sql",
+      "src/main/resources/db/migration/R__repair_flyway_v3.sql"
+    ],
     "models": [],
-    "foreign_keys": []
+    "foreign_keys": [
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "users",
+        "column": "user_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "users",
+        "column": "created_by_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "dimensions_analytiques",
+        "column": "dimension_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "parent_convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "partenaires",
+        "column": "partenaire_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "budgets",
+        "column": "budget_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "partenaires",
+        "column": "partenaire_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "partenaires",
+        "column": "mod_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "subventions",
+        "column": "subvention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "fournisseurs",
+        "column": "fournisseur_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "marches",
+        "column": "marche_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "marches",
+        "column": "marche_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "marches",
+        "column": "marche_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "fournisseurs",
+        "column": "fournisseur_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "fournisseurs",
+        "column": "fournisseur_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "comptes_bancaires",
+        "column": "compte_bancaire_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "depenses_investissement",
+        "column": "depense_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "conventions",
+        "column": "convention_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "marches",
+        "column": "marche_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "decomptes",
+        "column": "decompte_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "decomptes",
+        "column": "decompte_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "decomptes",
+        "column": "decompte_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "comptes_bancaires",
+        "column": "compte_bancaire_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "ordres_paiement",
+        "column": "ordre_paiement_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "ordres_paiement",
+        "column": "ordre_paiement_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "comptes_bancaires",
+        "column": "compte_bancaire_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "paiements",
+        "column": "paiement_id"
+      },
+      {
+        "from_table": "imputations_analytiques",
+        "to_table": "users",
+        "column": "created_by_id"
+      }
+    ]
   },
   "functional_rules": [
     {
       "id": "FR-001",
-      "text": "if 'raise ' in stripped and not stripped.startswith('#'):",
-      "type": "validation",
+      "text": "fun `should register new user successfully`() {",
+      "type": "test_evidence",
       "evidence": [
         {
-          "file": "generate_docs.py",
-          "line": 483,
-          "snippet": "            if lang == 'python':\n                # raise statements\n                if 'raise ' in stripped and not stripped.startswith('#'):\n                    # Extract error message\n                    error_match = re.search(r'raise\\s+\\w+\\([\"\\']([^\"\\']+)[\"\\']', stripped)"
+          "file": "src/test/kotlin/ma/investpro/integration/AuthIntegrationTest.kt",
+          "line": 35,
+          "snippet": "    @Order(1)\n    fun `should register new user successfully`() {\n        val registerRequest = RegisterRequest("
         }
       ]
     },
     {
       "id": "FR-002",
-      "text": "elif 'assert ' in stripped and not stripped.startswith('#'):",
-      "type": "assertion",
+      "text": "fun `should not register user with duplicate username`() {",
+      "type": "test_evidence",
       "evidence": [
         {
-          "file": "generate_docs.py",
-          "line": 509,
-          "snippet": "\n                # assert statements\n                elif 'assert ' in stripped and not stripped.startswith('#'):\n                    start_line = max(0, i - 2)\n                    end_line = min(len(lines), i + 3)"
+          "file": "src/test/kotlin/ma/investpro/integration/AuthIntegrationTest.kt",
+          "line": 61,
+          "snippet": "    @Order(2)\n    fun `should not register user with duplicate username`() {\n        // First registration"
+        }
+      ]
+    },
+    {
+      "id": "FR-003",
+      "text": "fun `should login with valid credentials`() {",
+      "type": "test_evidence",
+      "evidence": [
+        {
+          "file": "src/test/kotlin/ma/investpro/integration/AuthIntegrationTest.kt",
+          "line": 89,
+          "snippet": "    @Order(3)\n    fun `should login with valid credentials`() {\n        // Register user first"
+        }
+      ]
+    },
+    {
+      "id": "FR-004",
+      "text": "fun `should fail login with invalid credentials`() {",
+      "type": "test_evidence",
+      "evidence": [
+        {
+          "file": "src/test/kotlin/ma/investpro/integration/AuthIntegrationTest.kt",
+          "line": 122,
+          "snippet": "    @Order(4)\n    fun `should fail login with invalid credentials`() {\n        val loginRequest = LoginRequest("
+        }
+      ]
+    },
+    {
+      "id": "FR-005",
+      "text": "fun `should validate required fields on registration`() {",
+      "type": "test_evidence",
+      "evidence": [
+        {
+          "file": "src/test/kotlin/ma/investpro/integration/AuthIntegrationTest.kt",
+          "line": 139,
+          "snippet": "    @Order(5)\n    fun `should validate required fields on registration`() {\n        val invalidRequest = mapOf("
+        }
+      ]
+    },
+    {
+      "id": "FR-006",
+      "text": "fun `should connect to H2 test database successfully`() {",
+      "type": "test_evidence",
+      "evidence": [
+        {
+          "file": "src/test/kotlin/ma/investpro/integration/DatabaseConnectionTest.kt",
+          "line": 16,
+          "snippet": "    @Test\n    fun `should connect to H2 test database successfully`() {\n        dataSource.connection.use { connection ->"
+        }
+      ]
+    },
+    {
+      "id": "FR-007",
+      "text": "fun `should verify test database is accessible`() {",
+      "type": "test_evidence",
+      "evidence": [
+        {
+          "file": "src/test/kotlin/ma/investpro/integration/DatabaseConnectionTest.kt",
+          "line": 25,
+          "snippet": "    @Test\n    fun `should verify test database is accessible`() {\n        dataSource.connection.use { connection ->"
         }
       ]
     }
   ],
   "stats": {
-    "total_files": 7,
-    "total_classes": 9,
-    "total_functions": 59,
+    "total_files": 137,
+    "total_classes": 0,
+    "total_functions": 0,
     "total_routes": 0,
-    "total_tables": 0,
-    "total_rules": 2
+    "total_tables": 30,
+    "total_rules": 7
   }
 }

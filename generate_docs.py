@@ -5,13 +5,16 @@ Extracts code facts using tree-sitter and generates documentation.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Set
+from dataclasses import dataclass, asdict
 
 # Try to import tree-sitter
 try:
@@ -20,6 +23,25 @@ try:
 except ImportError:
     TREE_SITTER_AVAILABLE = False
     print("Warning: tree-sitter-language-pack not available. Install with: pip install tree-sitter-language-pack", file=sys.stderr)
+
+# LLM Imports
+try:
+    from anthropic import Anthropic
+    HAS_ANTHROPIC = True
+except ImportError:
+    HAS_ANTHROPIC = False
+
+try:
+    from openai import OpenAI
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 
 # ============================================================================
@@ -32,6 +54,10 @@ SUPPORTED_LANGUAGES = {
     '.tsx': 'tsx',
     '.js': 'javascript',
     '.jsx': 'javascript',
+    '.java': 'java',
+    '.kt': 'kotlin',
+    '.kts': 'kotlin',
+    '.php': 'php',
 }
 
 MANIFEST_FILES = [
@@ -61,15 +87,116 @@ IGNORE_DIRS = {
     'coverage', '.pytest_cache', '.mypy_cache', 'eggs',
 }
 
+CACHE_DIR = Path.home() / '.cache' / 'doc_generator'
+CACHE_EXPIRY_HOURS = 24
+
+
+# ============================================================================
+# CACHE SYSTEM
+# ============================================================================
+
+class CacheManager:
+    """Manages caching of parsing results for large repositories."""
+
+    def __init__(self, cache_dir: Path = CACHE_DIR, enabled: bool = True):
+        self.cache_dir = cache_dir
+        self.enabled = enabled
+        if self.enabled:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_file_hash(self, file_path: Path) -> str:
+        """Generate hash from file path and modification time."""
+        try:
+            mtime = file_path.stat().st_mtime
+            content = f"{file_path}:{mtime}"
+            return hashlib.md5(content.encode()).hexdigest()
+        except Exception:
+            return hashlib.md5(str(file_path).encode()).hexdigest()
+
+    def _get_cache_path(self, file_hash: str) -> Path:
+        """Get cache file path for a given hash."""
+        return self.cache_dir / f"{file_hash}.json"
+
+    def get(self, file_path: Path) -> Optional[Dict[str, Any]]:
+        """Get cached parsing result for a file."""
+        if not self.enabled:
+            return None
+
+        try:
+            file_hash = self._get_file_hash(file_path)
+            cache_path = self._get_cache_path(file_hash)
+
+            if not cache_path.exists():
+                return None
+
+            # Check if cache is expired
+            cache_age = time.time() - cache_path.stat().st_mtime
+            if cache_age > CACHE_EXPIRY_HOURS * 3600:
+                cache_path.unlink()
+                return None
+
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Cache read error for {file_path}: {e}", file=sys.stderr)
+            return None
+
+    def set(self, file_path: Path, data: Dict[str, Any]):
+        """Cache parsing result for a file."""
+        if not self.enabled:
+            return
+
+        try:
+            file_hash = self._get_file_hash(file_path)
+            cache_path = self._get_cache_path(file_hash)
+
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Cache write error for {file_path}: {e}", file=sys.stderr)
+
+    def clear(self):
+        """Clear all cached data."""
+        if not self.enabled or not self.cache_dir.exists():
+            return
+
+        try:
+            for cache_file in self.cache_dir.glob("*.json"):
+                cache_file.unlink()
+            print(f"Cache cleared: {self.cache_dir}")
+        except Exception as e:
+            print(f"Cache clear error: {e}", file=sys.stderr)
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        if not self.enabled or not self.cache_dir.exists():
+            return {'enabled': False}
+
+        cache_files = list(self.cache_dir.glob("*.json"))
+        total_size = sum(f.stat().st_size for f in cache_files)
+
+        return {
+            'enabled': True,
+            'location': str(self.cache_dir),
+            'files': len(cache_files),
+            'size_mb': round(total_size / (1024 * 1024), 2),
+        }
+
 
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
-def get_all_files(repo_path: str, max_files: int = 400) -> List[Path]:
-    """Recursively get all files in repo, respecting ignore dirs."""
+def get_all_files(repo_path: str, max_files: int = 400,
+                  include_pattern: Optional[str] = None,
+                  exclude_pattern: Optional[str] = None) -> List[Path]:
+    """Recursively get all files in repo, respecting ignore dirs and regex filters."""
     all_files = []
     repo = Path(repo_path)
+
+    # Compile regex patterns if provided
+    include_regex = re.compile(include_pattern) if include_pattern else None
+    exclude_regex = re.compile(exclude_pattern) if exclude_pattern else None
 
     for root, dirs, files in os.walk(repo):
         # Remove ignored directories from traversal
@@ -77,6 +204,16 @@ def get_all_files(repo_path: str, max_files: int = 400) -> List[Path]:
 
         for file in files:
             file_path = Path(root) / file
+            relative_path = str(file_path.relative_to(repo))
+
+            # Apply include filter
+            if include_regex and not include_regex.search(relative_path):
+                continue
+
+            # Apply exclude filter
+            if exclude_regex and exclude_regex.search(relative_path):
+                continue
+
             all_files.append(file_path)
 
             if len(all_files) >= max_files:
@@ -316,18 +453,255 @@ def parse_typescript_symbols(content: str, file_path: str, repo_path: Path, lang
         return {'functions': [], 'classes': [], 'routes': []}
 
 
-def extract_symbols(files: List[Path], repo_path: Path) -> Dict[str, Any]:
-    """Extract symbols from all supported files."""
+def parse_java_symbols(content: str, file_path: str, repo_path: Path) -> Dict[str, List[Dict]]:
+    """Parse Java file for classes, methods, and Spring annotations."""
+    if not TREE_SITTER_AVAILABLE:
+        return {'classes': [], 'functions': [], 'routes': []}
+
+    try:
+        language = get_language('java')
+        parser = get_parser('java')
+        tree = parser.parse(bytes(content, 'utf8'))
+
+        symbols = {
+            'classes': [],
+            'functions': [],
+            'routes': [],
+        }
+
+        def traverse(node, parent_class=None):
+            # Extract classes
+            if node.type == 'class_declaration':
+                class_name_node = node.child_by_field_name('name')
+                if class_name_node:
+                    class_name = content[class_name_node.start_byte:class_name_node.end_byte]
+                    symbols['classes'].append({
+                        'name': class_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    })
+                    # Recurse into class body
+                    for child in node.children:
+                        traverse(child, class_name)
+
+            # Extract methods
+            elif node.type == 'method_declaration':
+                method_name_node = node.child_by_field_name('name')
+                if method_name_node:
+                    method_name = content[method_name_node.start_byte:method_name_node.end_byte]
+
+                    # Check for Spring annotations
+                    annotations = []
+                    if node.parent:
+                        for sibling in node.parent.children:
+                            if sibling.type == 'marker_annotation' or sibling.type == 'annotation':
+                                ann_text = content[sibling.start_byte:sibling.end_byte]
+                                annotations.append(ann_text)
+
+                    symbol_info = {
+                        'name': method_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    }
+
+                    if parent_class:
+                        symbol_info['class'] = parent_class
+
+                    symbols['functions'].append(symbol_info)
+
+                    # Detect Spring REST annotations
+                    for ann in annotations:
+                        route_match = re.search(r'@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|RequestMapping)\s*\(\s*(?:value\s*=\s*)?["\']([^"\']+)["\']', ann)
+                        if route_match:
+                            annotation_type, path = route_match.groups()
+                            method = annotation_type.replace('Mapping', '').upper() if 'Mapping' in annotation_type else 'GET'
+                            symbols['routes'].append({
+                                'method': method,
+                                'path': path,
+                                'handler': method_name,
+                                'file': get_relative_path(Path(file_path), repo_path),
+                                'line': node.start_point[0] + 1,
+                            })
+
+            # Recurse
+            for child in node.children:
+                traverse(child, parent_class)
+
+        traverse(tree.root_node)
+        return symbols
+
+    except Exception as e:
+        print(f"Error parsing Java file {file_path}: {e}", file=sys.stderr)
+        return {'classes': [], 'functions': [], 'routes': []}
+
+
+def parse_kotlin_symbols(content: str, file_path: str, repo_path: Path) -> Dict[str, List[Dict]]:
+    """Parse Kotlin file for classes, functions, and Spring/Ktor annotations."""
+    if not TREE_SITTER_AVAILABLE:
+        return {'classes': [], 'functions': [], 'routes': []}
+
+    try:
+        language = get_language('kotlin')
+        parser = get_parser('kotlin')
+        tree = parser.parse(bytes(content, 'utf8'))
+
+        symbols = {
+            'classes': [],
+            'functions': [],
+            'routes': [],
+        }
+
+        def traverse(node, parent_class=None):
+            # Extract classes
+            if node.type == 'class_declaration':
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    class_name = content[name_node.start_byte:name_node.end_byte]
+                    symbols['classes'].append({
+                        'name': class_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    })
+                    for child in node.children:
+                        traverse(child, class_name)
+
+            # Extract functions
+            elif node.type == 'function_declaration':
+                name_node = node.child_by_field_name('simple_identifier')
+                if name_node:
+                    func_name = content[name_node.start_byte:name_node.end_byte]
+
+                    # Check for annotations
+                    annotations = []
+                    if node.parent:
+                        for sibling in node.parent.children:
+                            if sibling.type == 'annotation':
+                                ann_text = content[sibling.start_byte:sibling.end_byte]
+                                annotations.append(ann_text)
+
+                    symbol_info = {
+                        'name': func_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    }
+
+                    if parent_class:
+                        symbol_info['class'] = parent_class
+
+                    symbols['functions'].append(symbol_info)
+
+                    # Detect Spring/Ktor routes
+                    for ann in annotations:
+                        # Spring annotations
+                        route_match = re.search(r'@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']', ann)
+                        if route_match:
+                            annotation_type, path = route_match.groups()
+                            method = annotation_type.replace('Mapping', '').upper()
+                            symbols['routes'].append({
+                                'method': method,
+                                'path': path,
+                                'handler': func_name,
+                                'file': get_relative_path(Path(file_path), repo_path),
+                                'line': node.start_point[0] + 1,
+                            })
+
+            # Recurse
+            for child in node.children:
+                traverse(child, parent_class)
+
+        traverse(tree.root_node)
+        return symbols
+
+    except Exception as e:
+        print(f"Error parsing Kotlin file {file_path}: {e}", file=sys.stderr)
+        return {'classes': [], 'functions': [], 'routes': []}
+
+
+def parse_php_symbols(content: str, file_path: str, repo_path: Path) -> Dict[str, List[Dict]]:
+    """Parse PHP file for classes, functions, and routes."""
+    if not TREE_SITTER_AVAILABLE:
+        return {'classes': [], 'functions': [], 'routes': []}
+
+    try:
+        language = get_language('php')
+        parser = get_parser('php')
+        tree = parser.parse(bytes(content, 'utf8'))
+
+        symbols = {
+            'classes': [],
+            'functions': [],
+            'routes': [],
+        }
+
+        def traverse(node, parent_class=None):
+            # Extract classes
+            if node.type == 'class_declaration':
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    class_name = content[name_node.start_byte:name_node.end_byte]
+                    symbols['classes'].append({
+                        'name': class_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    })
+                    for child in node.children:
+                        traverse(child, class_name)
+
+            # Extract functions/methods
+            elif node.type in ['function_definition', 'method_declaration']:
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    func_name = content[name_node.start_byte:name_node.end_byte]
+
+                    symbol_info = {
+                        'name': func_name,
+                        'file': get_relative_path(Path(file_path), repo_path),
+                        'line': node.start_point[0] + 1,
+                    }
+
+                    if parent_class:
+                        symbol_info['class'] = parent_class
+
+                    symbols['functions'].append(symbol_info)
+
+            # Recurse
+            for child in node.children:
+                traverse(child, parent_class)
+
+        traverse(tree.root_node)
+        return symbols
+
+    except Exception as e:
+        print(f"Error parsing PHP file {file_path}: {e}", file=sys.stderr)
+        return {'classes': [], 'functions': [], 'routes': []}
+
+
+def extract_symbols(files: List[Path], repo_path: Path, cache: Optional[CacheManager] = None) -> Dict[str, Any]:
+    """Extract symbols from all supported files with optional caching."""
     all_symbols = {
         'classes': [],
         'functions': [],
         'routes': [],
     }
 
+    cache_hits = 0
+    cache_misses = 0
+
     for file_path in files:
         ext = get_file_extension(file_path)
         if ext not in SUPPORTED_LANGUAGES:
             continue
+
+        # Try to get from cache first
+        if cache:
+            cached_symbols = cache.get(file_path)
+            if cached_symbols:
+                cache_hits += 1
+                all_symbols['classes'].extend(cached_symbols.get('classes', []))
+                all_symbols['functions'].extend(cached_symbols.get('functions', []))
+                all_symbols['routes'].extend(cached_symbols.get('routes', []))
+                continue
+            cache_misses += 1
 
         content = read_file_safe(file_path)
         if not content:
@@ -339,12 +713,25 @@ def extract_symbols(files: List[Path], repo_path: Path) -> Dict[str, Any]:
             symbols = parse_python_symbols(content, str(file_path), repo_path)
         elif lang in ['typescript', 'javascript', 'tsx']:
             symbols = parse_typescript_symbols(content, str(file_path), repo_path, lang)
+        elif lang == 'java':
+            symbols = parse_java_symbols(content, str(file_path), repo_path)
+        elif lang == 'kotlin':
+            symbols = parse_kotlin_symbols(content, str(file_path), repo_path)
+        elif lang == 'php':
+            symbols = parse_php_symbols(content, str(file_path), repo_path)
         else:
             continue
+
+        # Cache the result
+        if cache:
+            cache.set(file_path, symbols)
 
         all_symbols['classes'].extend(symbols.get('classes', []))
         all_symbols['functions'].extend(symbols.get('functions', []))
         all_symbols['routes'].extend(symbols.get('routes', []))
+
+    if cache and (cache_hits > 0 or cache_misses > 0):
+        print(f"Cache: {cache_hits} hits, {cache_misses} misses ({cache_hits/(cache_hits+cache_misses)*100:.1f}% hit rate)")
 
     return all_symbols
 
@@ -580,10 +967,25 @@ def extract_functional_rules(files: List[Path], repo_path: Path) -> List[Dict[st
 # DOC CONTEXT GENERATION
 # ============================================================================
 
-def generate_doc_context(repo_path: Path, max_files: int = 400) -> Dict[str, Any]:
+def generate_doc_context(repo_path: Path, max_files: int = 400, use_cache: bool = True,
+                        include_pattern: Optional[str] = None,
+                        exclude_pattern: Optional[str] = None) -> Dict[str, Any]:
     """Generate the doc_context.json with all extracted facts."""
+    # Initialize cache
+    cache = CacheManager(enabled=use_cache) if use_cache else None
+
+    if cache and use_cache:
+        cache_stats = cache.get_stats()
+        if cache_stats.get('enabled'):
+            print(f"Cache enabled: {cache_stats['files']} cached files ({cache_stats['size_mb']} MB)")
+
     print("Scanning repository...")
-    files = get_all_files(str(repo_path), max_files)
+    if include_pattern:
+        print(f"Include pattern: {include_pattern}")
+    if exclude_pattern:
+        print(f"Exclude pattern: {exclude_pattern}")
+
+    files = get_all_files(str(repo_path), max_files, include_pattern, exclude_pattern)
     print(f"Found {len(files)} files")
 
     print("Extracting tech overview...")
@@ -593,7 +995,7 @@ def generate_doc_context(repo_path: Path, max_files: int = 400) -> Dict[str, Any
     structure = extract_repo_structure(repo_path)
 
     print("Extracting symbols...")
-    symbols = extract_symbols(files, repo_path)
+    symbols = extract_symbols(files, repo_path, cache)
 
     print("Extracting database information...")
     database = extract_database_info(files, repo_path)
@@ -630,6 +1032,14 @@ def generate_doc_context(repo_path: Path, max_files: int = 400) -> Dict[str, Any
 
 def generate_readme(context: Dict[str, Any]) -> str:
     """Generate README.md content."""
+    # Check if we have LLM enhancement
+    llm_content = context.get('llm_enhanced', {}).get('readme_enhancement')
+    if llm_content:
+        # If it looks like full markdown, return it
+        if '# ' in llm_content:
+            return llm_content
+        return f"# Documentation\n\n{llm_content}\n\n---\n*Enhanced by AI analysis*\n"
+
     repo_name = context['repository']['name']
     tech = context['tech_overview']
     stats = context['stats']
@@ -707,6 +1117,14 @@ This repository is primarily written in **{main_lang}** and contains:
 
 def generate_architecture_md(context: Dict[str, Any]) -> str:
     """Generate docs/architecture.md with Mermaid diagrams."""
+    # Check if we have LLM enhancement
+    llm_content = context.get('llm_enhanced', {}).get('architecture_enhancement')
+    if llm_content:
+        # If it looks like full markdown, return it
+        if '# ' in llm_content:
+            return llm_content
+        return f"# Architecture Guide\n\n{llm_content}\n\n---\n*Enhanced by AI analysis*\n"
+
     structure = context['structure']
     routes = context['symbols']['routes']
     dirs = structure.get('top_level_dirs', [])
@@ -947,16 +1365,152 @@ This document lists the functional rules extracted from the codebase.
 
 
 # ============================================================================
-# LLM ENHANCEMENT (OPTIONAL)
+# LLM ENHANCEMENT (AI)
 # ============================================================================
 
-def enhance_with_llm(context: Dict[str, Any], provider: str) -> Dict[str, str]:
-    """Optionally enhance documentation with LLM."""
+@dataclass
+class LLMConfig:
+    provider: str  # 'anthropic', 'openai', 'ollama'
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+class LLMClient:
+    """Unified LLM client supporting Anthropic, OpenAI, and Ollama"""
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+        self.client = None
+        self.model = config.model
+
+        if config.provider == 'anthropic':
+            if not HAS_ANTHROPIC:
+                raise ImportError("Package 'anthropic' not found.")
+            api_key = config.api_key or os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY not set!")
+            self.client = Anthropic(api_key=api_key)
+            if not self.model:
+                self.model = "claude-haiku-4-5-20251001"
+
+        elif config.provider == 'openai':
+            if not HAS_OPENAI:
+                raise ImportError("Package 'openai' not found.")
+            api_key = config.api_key or os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY not set!")
+            self.client = OpenAI(api_key=api_key)
+            if not self.model:
+                self.model = "gpt-4o"
+
+        elif config.provider == 'ollama':
+            if not HAS_REQUESTS:
+                raise ImportError("Package 'requests' not found.")
+            self.base_url = config.base_url or "http://localhost:11434"
+            if not self.model:
+                self.model = "llama3.2"
+            # Test Ollama connection
+            try:
+                requests.get(f"{self.base_url}/api/tags", timeout=2)
+            except Exception:
+                raise ValueError(f"Cannot connect to Ollama at {self.base_url}")
+
+    def analyze(self, prompt: str, max_tokens: int = 4000) -> str:
+        """Send prompt to LLM and get response"""
+        if self.config.provider == 'anthropic':
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+
+        elif self.config.provider == 'openai':
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+
+        elif self.config.provider == 'ollama':
+            response = requests.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False
+                }
+            )
+            return response.json().get('response', '')
+        
+        return ""
+
+
+def enhance_with_llm(context: Dict[str, Any], provider: str, api_key: Optional[str] = None, 
+                     model: Optional[str] = None, base_url: Optional[str] = None) -> Dict[str, str]:
+    """Enhance documentation with LLM using extracted facts."""
     if provider == 'none':
         return {}
 
-    print(f"LLM enhancement with {provider} is not implemented in this version.")
-    print("Generating template-based documentation...")
+    print(f"============================================================")
+    print(f"🤖 Smart Documentation Generator")
+    print(f"============================================================")
+    print(f"✅ LLM Provider: {provider}")
+    print(f"🚀 Enhancing documentation...")
+    try:
+        config = LLMConfig(provider=provider, api_key=api_key, model=model, base_url=base_url)
+        client = LLMClient(config)
+
+        # Prepare context for LLM
+        # We don't want to send everything if it's too big, but let's start simple
+        simplified_context = {
+            'project_name': context.get('project_name'),
+            'languages': context.get('languages'),
+            'structure': context.get('structure'),
+            'key_symbols': {
+                'classes': [c['name'] for c in context.get('symbols', {}).get('classes', [])[:20]],
+                'functions': [f['name'] for f in context.get('symbols', {}).get('functions', [])[:30]],
+                'routes': context.get('symbols', {}).get('routes', [])[:20]
+            },
+            'dependencies': context.get('dependencies', {})
+        }
+
+        prompt = f"""
+        You are a senior technical writer. Based on the following technical facts about a software project, 
+        generate a professional and clear README.md and ARCHITECTURE.md content.
+        
+        FACTS:
+        {json.dumps(simplified_context, indent=2)}
+        
+        REQUIREMENTS:
+        - Focus on the business value and what the project actually does.
+        - Explain the architecture based on the detected symbols and structure.
+        - Use clean Markdown.
+        - Be concise but thorough.
+        
+        Return a JSON with two keys: 'readme_enhancement' and 'architecture_enhancement'.
+        Each should contain the enhanced Markdown content.
+        """
+
+        response = client.analyze(prompt)
+        
+        # Try to parse JSON from response (sometimes LLMs wrap it in code blocks)
+        try:
+            # Simple regex to find JSON block
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                enhancements = json.loads(json_match.group(0))
+                return enhancements
+        except Exception:
+            print("Warning: Could not parse LLM response as JSON. Using raw response.")
+            return {'readme_enhancement': response, 'architecture_enhancement': response}
+
+    except Exception as e:
+        print(f"❌ LLM Enhancement failed: {e}", file=sys.stderr)
+        return {}
+    
     return {}
 
 
@@ -988,13 +1542,55 @@ def main():
         help='LLM provider for enhancement (default: none)'
     )
     parser.add_argument(
+        '--api-key',
+        type=str,
+        help='API Key for the LLM provider'
+    )
+    parser.add_argument(
+        '--model',
+        type=str,
+        help='Model name to use (e.g., gpt-4o, claude-3-5-sonnet-20241022)'
+    )
+    parser.add_argument(
+        '--base-url',
+        type=str,
+        help='Base URL for Ollama or other providers'
+    )
+    parser.add_argument(
         '--max-files',
         type=int,
         default=400,
         help='Maximum number of files to process (default: 400)'
     )
+    parser.add_argument(
+        '--no-cache',
+        action='store_true',
+        help='Disable caching (default: caching enabled)'
+    )
+    parser.add_argument(
+        '--clear-cache',
+        action='store_true',
+        help='Clear cache and exit'
+    )
+    parser.add_argument(
+        '--include-pattern',
+        type=str,
+        help='Include only files matching regex pattern (e.g., ".*\\.py$" for Python only)'
+    )
+    parser.add_argument(
+        '--exclude-pattern',
+        type=str,
+        help='Exclude files matching regex pattern (e.g., "test.*" to exclude test files)'
+    )
 
     args = parser.parse_args()
+
+    # Handle cache clearing
+    if args.clear_cache:
+        cache = CacheManager()
+        cache.clear()
+        print("✅ Cache cleared successfully")
+        sys.exit(0)
 
     # Validate inputs
     repo_path = Path(args.repo).resolve()
@@ -1010,20 +1606,36 @@ def main():
         print("Warning: Running without tree-sitter. Symbol extraction will be limited.", file=sys.stderr)
 
     # Generate doc context
-    print(f"Analyzing repository: {repo_path}")
-    context = generate_doc_context(repo_path, args.max_files)
+    print(f"📁 Analyzing repository: {repo_path}")
+    context = generate_doc_context(
+        repo_path,
+        args.max_files,
+        use_cache=not args.no_cache,
+        include_pattern=args.include_pattern,
+        exclude_pattern=args.exclude_pattern
+    )
 
     # Save doc_context.json
     context_file = out_path / 'doc_context.json'
-    print(f"Writing {context_file}")
+    print(f"📄 Writing context to: {context_file}")
     with open(context_file, 'w', encoding='utf-8') as f:
         json.dump(context, f, indent=2)
 
     # Enhance with LLM (optional)
-    enhance_with_llm(context, args.llm_provider)
+    enhancements = enhance_with_llm(
+        context, 
+        args.llm_provider, 
+        api_key=args.api_key, 
+        model=args.model, 
+        base_url=args.base_url
+    )
+    
+    # Merge enhancements into context for template use
+    if enhancements:
+        context['llm_enhanced'] = enhancements
 
     # Generate documentation files
-    print("Generating documentation...")
+    print("📝 Generating documentation...")
 
     # Create docs directory
     docs_dir = out_path / 'docs'
@@ -1031,25 +1643,25 @@ def main():
 
     # Generate README.md
     readme_file = out_path / 'README.md'
-    print(f"Writing {readme_file}")
+    print(f"  └─ Writing: {readme_file}")
     with open(readme_file, 'w', encoding='utf-8') as f:
         f.write(generate_readme(context))
 
     # Generate architecture.md
     arch_file = docs_dir / 'architecture.md'
-    print(f"Writing {arch_file}")
+    print(f"  └─ Writing: {arch_file}")
     with open(arch_file, 'w', encoding='utf-8') as f:
         f.write(generate_architecture_md(context))
 
     # Generate database.md
     db_file = docs_dir / 'database.md'
-    print(f"Writing {db_file}")
+    print(f"  └─ Writing: {db_file}")
     with open(db_file, 'w', encoding='utf-8') as f:
         f.write(generate_database_md(context))
 
     # Generate functional_rules.md
     rules_file = docs_dir / 'functional_rules.md'
-    print(f"Writing {rules_file}")
+    print(f"  └─ Writing: {rules_file}")
     with open(rules_file, 'w', encoding='utf-8') as f:
         f.write(generate_functional_rules_md(context))
 
